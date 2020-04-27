@@ -137,14 +137,14 @@ jobs:
         run: |
           release_upload_url="$(cat artifacts/release-upload-url)"
           echo "::set-env name=RELEASE_UPLOAD_URL::$release_upload_url"
-          echo "release upload url: $RELEASE_UPLOAD_URL"
+          echo "release upload url: $release_upload_url"
           release_version="$(cat artifacts/release-version)"
           echo "::set-env name=RELEASE_VERSION::$release_version"
-          echo "release version: $RELEASE_VERSION"
+          echo "release version: $release_version"
           release_commit="$(cat artifacts/release-commit-hash)"
           echo "::set-env name=RELEASE_COMMIT_HASH::$release_commit"
           echo "::set-output name=commit::$release_commit"
-          echo "release commit: $RELEASE_COMMIT_HASH"
+          echo "release commit: $release_commit"
 
       - name: Clone Artichoke
         uses: actions/checkout@v2
