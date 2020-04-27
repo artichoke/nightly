@@ -121,6 +121,10 @@ jobs:
         run: choco install winflexbison3 --no-progress
         if: matrix.os == 'windows-latest'
 
+      - name: Install musl
+        run: apt-get install musl-gcc
+        if: matrix.build == 'linux-musl'
+
       - name: Get release download URL
         uses: actions/download-artifact@v1
         with:
@@ -156,8 +160,8 @@ jobs:
       - name: Strip release binary (linux and macos)
         if: matrix.build == 'linux' || matrix.build == 'linux-musl' || matrix.build == 'macos'
         run: |
-          strip "target/${{ matrix.target }}/release/artichoke"
-          strip "target/${{ matrix.target }}/release/airb"
+          strip "artichoke/target/${{ matrix.target }}/release/artichoke"
+          strip "artichoke/target/${{ matrix.target }}/release/airb"
 
       - name: Build archive
         shell: bash
