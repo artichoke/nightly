@@ -1,8 +1,5 @@
 name: Nightly Builder
 on:
-  push:
-    branches:
-      - master
   schedule:
     - cron: "0 0 * * *" # build nightly!
 
