@@ -78,7 +78,7 @@ jobs:
         include:
           - build: linux
             os: ubuntu-latest
-            target: x86_64-unknown-linux-gn
+            target: x86_64-unknown-linux-gnu
           - build: linux-musl
             os: ubuntu-latest
             target: x86_64-unknown-linux-musl
@@ -93,12 +93,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Get Artichoke HEAD commit
-        id: master_commit
-        run: |
-          MASTER_COMMIT_SHA="$(curl https://api.github.com/repos/artichoke/artichoke/commits/master | jq --raw-output '.sha')"
-          echo "::set-output name=sha::$MASTER_COMMIT_SHA"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
