@@ -163,7 +163,7 @@ jobs:
       - name: Build archive
         shell: bash
         run: |
-          staging="artichoke-${{ env.RELEASE_VERSION }}-${{ matrix.target }}"
+          staging="artichoke-nightly-${{ matrix.target }}"
           mkdir -p "$staging"/
           cp artichoke/{README.md,LICENSE} "$staging/"
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
