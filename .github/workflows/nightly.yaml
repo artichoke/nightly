@@ -19,11 +19,12 @@ jobs:
         if: env.ARTICHOKE_NIGHTLY_VERSION == ''
         run: |
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::nightly-$(date '+%Y-%m-%d')"
+            artichoke_nightly_version="nightly-$(date '+%Y-%m-%d')"
           else
-            echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::$(basename "${{ github.ref }}")"
+            artichoke_nightly_version="$(basename "${{ github.ref }}")"
           fi
-          echo "version is: ${{ env.ARTICHOKE_NIGHTLY_VERSION }}"
+          echo "version is: ${artichoke_nightly_version}"
+          echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::${artichoke_nightly_version}"
 
       - name: Clone Artichoke
         uses: actions/checkout@v2
@@ -156,6 +157,10 @@ jobs:
           repository: artichoke/artichoke
           path: artichoke
           ref: ${{ steps.release_info.outputs.commit }}
+          # fetch all history
+          # `build.rs` calculates things like birth date and revision number by
+          # walking the git history.
+          fetch-depth: 0
 
       - name: Set strip linker flag
         if: matrix.build == 'linux' || matrix.build == 'linux-musl' || matrix.build == 'macos'
