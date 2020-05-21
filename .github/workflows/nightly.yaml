@@ -1,5 +1,8 @@
 name: Nightly Builder
 on:
+  push:
+    tags:
+      - '*'
   schedule:
     - cron: "0 0 * * *" # build nightly!
 
@@ -15,7 +18,11 @@ jobs:
       - name: Get the release version from the tag
         if: env.ARTICHOKE_NIGHTLY_VERSION == ''
         run: |
-          echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::nightly-$(date '+%Y-%m-%d')"
+          if [[ "${{ github.event_name }} == "schedule" ]]; then
+            echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::nightly-$(date '+%Y-%m-%d')"
+          else
+            echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::$(basename "${{ github.ref }}")"
+          fi
           echo "version is: ${{ env.ARTICHOKE_NIGHTLY_VERSION }}"
 
       - name: Clone Artichoke
@@ -169,7 +176,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
-            7z a "$staging.zip" "$staging"
+            "/c/Program Files/7-Zip/7z.exe" a "$staging.zip" "$staging"
             echo "::set-env name=ASSET::$staging.zip"
           else
             cp "artichoke/target/${{ matrix.target }}/release/artichoke" "$staging/"
