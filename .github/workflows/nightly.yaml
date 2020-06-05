@@ -99,6 +99,25 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Clone Artichoke
+        uses: actions/checkout@v2
+        with:
+          repository: artichoke/artichoke
+          path: artichoke
+          ref: ${{ steps.release_info.outputs.commit }}
+          # fetch all history
+          # `build.rs` calculates things like birth date and revision number by
+          # walking the git history.
+          fetch-depth: 0
+
+      - name: Setup rust-toolchain override
+        shell: bash
+        run: cp artichoke/rust-toolchain rust-toolchain
+
+      - name: Setup .ruby-version override
+        shell: bash
+        run: cp artichoke/.ruby-version .ruby-version
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -150,17 +169,6 @@ jobs:
           echo "::set-env name=RELEASE_COMMIT_HASH::$release_commit"
           echo "::set-output name=commit::$release_commit"
           echo "release commit: $release_commit"
-
-      - name: Clone Artichoke
-        uses: actions/checkout@v2
-        with:
-          repository: artichoke/artichoke
-          path: artichoke
-          ref: ${{ steps.release_info.outputs.commit }}
-          # fetch all history
-          # `build.rs` calculates things like birth date and revision number by
-          # walking the git history.
-          fetch-depth: 0
 
       - name: Set strip linker flag
         if: matrix.build == 'linux' || matrix.build == 'linux-musl' || matrix.build == 'macos'
