@@ -1,5 +1,6 @@
+---
 name: Nightly Builder
-on:
+"on":
   push:
     tags:
       - "*"
