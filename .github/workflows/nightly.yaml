@@ -17,15 +17,17 @@ jobs:
         run: mkdir artifacts
 
       - name: Get the release version from the tag
-        if: env.ARTICHOKE_NIGHTLY_VERSION == ''
+        id: release_version
         run: |
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
             artichoke_nightly_version="nightly-$(date '+%Y-%m-%d')"
           else
             artichoke_nightly_version="$(basename "${{ github.ref }}")"
           fi
-          echo "version is: ${artichoke_nightly_version}"
-          echo "::set-env name=ARTICHOKE_NIGHTLY_VERSION::${artichoke_nightly_version}"
+          echo "Release version is: ${artichoke_nightly_version}"
+          echo "Release name is: ${artichoke_nightly_version}"
+          echo "::set-output name=tag::${artichoke_nightly_version}"
+          echo "::set-output name=name::${artichoke_nightly_version}"
 
       - name: Clone Artichoke
         uses: actions/checkout@v2
@@ -36,7 +38,10 @@ jobs:
       - name: Set latest_commit
         id: latest_commit
         working-directory: artichoke
-        run: echo "::set-output name=commit::$(git rev-parse HEAD)"
+        run: |
+          artichoke_head=$(git rev-parse HEAD)
+          echo "Artichoke HEAD commit is: ${artichoke_head}"
+          echo "::set-output name=commit::${artichoke_head}"
 
       - name: Create GitHub release
         id: release
@@ -44,8 +49,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.ARTICHOKE_NIGHTLY_VERSION }}
-          release_name: ${{ env.ARTICHOKE_NIGHTLY_VERSION }}
+          tag_name: ${{ steps.release_version.outputs.tag }}
+          release_name: ${{ steps.release_version.outputs.name }}
           draft: true
           prerelease: false
           body: artichoke/artichoke@${{ steps.latest_commit.outputs.commit }}
@@ -60,7 +65,7 @@ jobs:
         run: echo "${{ steps.release.outputs.upload_url }}" > artifacts/release-upload-url
 
       - name: Save version number to artifact
-        run: echo "${{ env.ARTICHOKE_NIGHTLY_VERSION }}" > artifacts/release-version
+        run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
@@ -98,7 +103,27 @@ jobs:
       RUST_BACKTRACE: 1
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Get release download URL
+        uses: actions/download-artifact@v2
+        with:
+          name: artifacts
+          path: artifacts
+
+      - name: Set release upload URL and release version
+        shell: bash
+        id: release_info
+        run: |
+          release_upload_url="$(cat artifacts/release-upload-url)"
+          release_version="$(cat artifacts/release-version)"
+          release_commit="$(cat artifacts/release-commit-hash)"
+
+          echo "Release upload url: ${release_upload_url}"
+          echo "Release version: ${release_version}"
+          echo "Release commit: ${release_commit}"
+
+          echo "::set-output name=upload_url::${release_upload_url}"
+          echo "::set-output name=version::${release_version}"
+          echo "::set-output name=commit::${release_commit}"
 
       - name: Clone Artichoke
         uses: actions/checkout@v2
@@ -106,9 +131,10 @@ jobs:
           repository: artichoke/artichoke
           path: artichoke
           ref: ${{ steps.release_info.outputs.commit }}
-          # fetch all history
-          # `build.rs` calculates things like birth date and revision number by
-          # walking the git history.
+          # Fetch all history.
+          #
+          # The Artichoke release metadata build script calculates Ruby
+          # constants like `RUBY_REVISION` by walking the git history.
           fetch-depth: 0
 
       - name: Setup rust-toolchain override
@@ -133,78 +159,60 @@ jobs:
       # avoid choco because it takes forever to initialize on first use
       # instead, install directly from GitHub releases
       - name: Install Bison
+        if: runner.os == 'Windows'
         run: |
           (New-Object System.Net.WebClient).DownloadFile("https://github.com/lexxmark/winflexbison/releases/download/v2.5.22/win_flex_bison-2.5.22.zip","win_flex_bison.zip");
           Expand-Archive .\win_flex_bison.zip .\win_flex_bison;
           echo "::add-path::${{ github.workspace }}/win_flex_bison"
-        if: matrix.os == 'windows-latest'
 
       - name: Install musl
-        run: sudo apt install musl-tools
         if: matrix.build == 'linux-musl'
-
-      - name: Get release download URL
-        uses: actions/download-artifact@v2
-        with:
-          name: artifacts
-          path: artifacts
-
-      - name: Set release upload URL and release version
-        shell: bash
-        id: release_info
-        run: |
-          release_upload_url="$(cat artifacts/release-upload-url)"
-          echo "::set-env name=RELEASE_UPLOAD_URL::$release_upload_url"
-          echo "release upload url: $release_upload_url"
-          release_version="$(cat artifacts/release-version)"
-          echo "::set-env name=RELEASE_VERSION::$release_version"
-          echo "release version: $release_version"
-          release_commit="$(cat artifacts/release-commit-hash)"
-          echo "::set-env name=RELEASE_COMMIT_HASH::$release_commit"
-          echo "::set-output name=commit::$release_commit"
-          echo "release commit: $release_commit"
+        run: sudo apt install musl-tools
 
       - name: Set strip linker flag
-        if: matrix.build == 'linux' || matrix.build == 'linux-musl' || matrix.build == 'macos'
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         # strip binary artifacts with a linker flag
         # https://github.com/rust-lang/cargo/issues/3483#issuecomment-431209957
         run: echo "::set-env name=RUSTFLAGS::-C link-arg=-s"
 
       - name: Build release artifacts
         working-directory: artichoke
-        run: cargo build --verbose --release  --target ${{ matrix.target }}
+        run: cargo build --verbose --release --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
+        id: build
         run: |
           staging="artichoke-nightly-${{ matrix.target }}"
           mkdir -p "$staging"/
           cp artichoke/{README.md,LICENSE} "$staging/"
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ runner.os }}" = "Windows" ]; then
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
             "/c/Program Files/7-Zip/7z.exe" a "$staging.zip" "$staging"
-            echo "::set-env name=ASSET::$staging.zip"
+            echo "::set-output name=asset::$staging.zip"
+            echo "::set-output name=content_type::application/zip"
           else
             cp "artichoke/target/${{ matrix.target }}/release/artichoke" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb" "$staging/"
             tar czf "$staging.tar.gz" "$staging"
-            echo "::set-env name=ASSET::$staging.tar.gz"
+            echo "::set-output name=asset::$staging.tar.gz"
+            echo "::set-output name=content_type::application/gzip"
           fi
 
       - name: Upload release archive
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ env.RELEASE_UPLOAD_URL }}
-          asset_path: ${{ env.ASSET }}
-          asset_name: ${{ env.ASSET }}
-          asset_content_type: application/octet-stream
+          upload_url: ${{ steps.release_info.outputs.upload_url }}
+          asset_path: ${{ steps.build.outputs.asset }}
+          asset_name: ${{ steps.build.outputs.asset }}
+          asset_content_type: ${{ steps.build.outputs.content_type }}
 
   finalize-release:
     name: Publish Release
-    needs: [build-release]
+    needs: ["build-release"]
     runs-on: ubuntu-latest
     steps:
       - name: Get release download URL
