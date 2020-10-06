@@ -173,7 +173,7 @@ jobs:
         if: runner.os == 'Linux' || runner.os == 'macOS'
         # strip binary artifacts with a linker flag
         # https://github.com/rust-lang/cargo/issues/3483#issuecomment-431209957
-        run: echo "::set-env name=RUSTFLAGS::-C link-arg=-s"
+        run: echo "RUSTFLAGS=-C link-arg=-s" >> $GITHUB_ENV
 
       - name: Build release artifacts
         working-directory: artichoke
