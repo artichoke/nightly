@@ -163,7 +163,7 @@ jobs:
         run: |
           (New-Object System.Net.WebClient).DownloadFile("https://github.com/lexxmark/winflexbison/releases/download/v2.5.22/win_flex_bison-2.5.22.zip","win_flex_bison.zip");
           Expand-Archive .\win_flex_bison.zip .\win_flex_bison;
-          echo "::add-path::${{ github.workspace }}/win_flex_bison"
+          echo "${{ github.workspace }}/win_flex_bison" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
 
       - name: Install musl
         if: matrix.build == 'linux-musl'
