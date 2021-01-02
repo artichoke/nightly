@@ -98,7 +98,7 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
           - build: macos-apple-silicon
-            os: macos-latest
+            os: macos-11.0
             target: aarch64-apple-darwin
           - build: windows
             os: windows-latest
