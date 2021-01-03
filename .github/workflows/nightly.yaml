@@ -160,6 +160,13 @@ jobs:
         with:
           ruby-version: ".ruby-version"
 
+      - name: Import GPG key
+        id: import_gpg
+        uses: artichoke/ghaction-import-gpg@v2.1.0
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
+
       - name: Install musl
         if: matrix.build == 'linux-musl'
         run: sudo apt install musl-tools
@@ -185,12 +192,16 @@ jobs:
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
             "/c/Program Files/7-Zip/7z.exe" a "$staging.zip" "$staging"
+            echo "${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}" | gpg --passphrase-fd 0 --pinentry-mode loopback --batch --yes --detach-sign --armor --local-user AF57A37CAC061452 --output  "$staging.zip.asc" "$staging.zip"
+            gpg --batch --verify "$staging.zip.asc" "$staging.zip"
             echo "::set-output name=asset::$staging.zip"
             echo "::set-output name=content_type::application/zip"
           else
             cp "artichoke/target/${{ matrix.target }}/release/artichoke" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb" "$staging/"
             tar czf "$staging.tar.gz" "$staging"
+            echo "${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}" | gpg --passphrase-fd 0 --pinentry-mode loopback --batch --yes --detach-sign --armor --local-user AF57A37CAC061452 --output  "$staging.tar.gz.asc" "$staging.tar.gz"
+            gpg --batch --verify "$staging.tar.gz.asc" "$staging.tar.gz"
             echo "::set-output name=asset::$staging.tar.gz"
             echo "::set-output name=content_type::application/gzip"
           fi
@@ -204,6 +215,16 @@ jobs:
           asset_path: ${{ steps.build.outputs.asset }}
           asset_name: ${{ steps.build.outputs.asset }}
           asset_content_type: ${{ steps.build.outputs.content_type }}
+
+      - name: Upload release signature
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_info.outputs.upload_url }}
+          asset_path: ${{ steps.build.outputs.asset }}.asc
+          asset_name: ${{ steps.build.outputs.asset }}.asc
+          asset_content_type: "text/plain"
 
   finalize-release:
     name: Publish Release
