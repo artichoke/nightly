@@ -35,6 +35,7 @@ Currently supported nightly targets are:
 - `x86_64-unknown-linux-musl`
 - `x86_64-apple-darwin`
 - `x86_64-pc-windows-msvc`
+- `aarch64-apple-darwin` (Apple Silicon)
 
 [artichoke ruby]: https://github.com/artichoke/artichoke
 [docker-nightly]: https://github.com/artichoke/docker-artichoke-nightly
