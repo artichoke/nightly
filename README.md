@@ -37,7 +37,20 @@ Currently supported nightly targets are:
 - `x86_64-pc-windows-msvc`
 - `aarch64-apple-darwin` (Apple Silicon)
 
+## Code Signing
+
+Release artifacts are signed with the the following GPG key:
+
+**User ID**: Code signing for Artichoke Ruby \<codesign@artichokeruby.org\>  
+**Signing Key ID**: AF57A37CAC061452  
+**Signing Key Fingerprint**: 1C4A856ACF86EC1EE841180FAF57A37CAC061452  
+**Public Key**: <https://github.com/artichoke-ci.gpg>, [artichoke/nightly#20],
+[artichoke/nightly@84e687e866edb52a43a4f462accf3020fe8797f1].
+
 [artichoke ruby]: https://github.com/artichoke/artichoke
 [docker-nightly]: https://github.com/artichoke/docker-artichoke-nightly
 [nightly-releases]: https://github.com/artichoke/nightly/releases
 [`ruby-build`]: https://github.com/rbenv/ruby-build
+[artichoke/nightly#20]: https://github.com/artichoke/nightly/pull/20
+[artichoke/nightly@84e687e866edb52a43a4f462accf3020fe8797f1]:
+  https://github.com/artichoke/nightly/commit/84e687e866edb52a43a4f462accf3020fe8797f1
