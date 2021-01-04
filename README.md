@@ -45,7 +45,9 @@ Release artifacts are signed with the the following GPG key:
 **Signing Key ID**: AF57A37CAC061452  
 **Signing Key Fingerprint**: 1C4A856ACF86EC1EE841180FAF57A37CAC061452  
 **Public Key**: <https://github.com/artichoke-ci.gpg>, [artichoke/nightly#20],
-[artichoke/nightly@84e687e866edb52a43a4f462accf3020fe8797f1].
+[artichoke/nightly@84e687e866edb52a43a4f462accf3020fe8797f1].  
+**Proof**: <https://twitter.com/artichokeruby/status/1345911198340923393>,
+<https://twitter.com/artichokeruby/status/1345911819253104641>.
 
 [artichoke ruby]: https://github.com/artichoke/artichoke
 [docker-nightly]: https://github.com/artichoke/docker-artichoke-nightly
