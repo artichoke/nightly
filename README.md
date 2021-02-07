@@ -31,11 +31,13 @@ $ rbenv install artichoke-dev
 
 Currently supported nightly targets are:
 
-- `x86_64-unknown-linux-gnu`
-- `x86_64-unknown-linux-musl`
-- `x86_64-apple-darwin`
-- `x86_64-pc-windows-msvc`
-- `aarch64-apple-darwin` (Apple Silicon)
+Currently supported nightly targets are:
+
+- [`x86_64-unknown-linux-gnu`]
+- [`x86_64-unknown-linux-musl`]
+- [`x86_64-apple-darwin`]
+- [`x86_64-pc-windows-msvc`]
+- [`aarch64-apple-darwin`] (Apple Silicon)
 
 ## Code Signing
 
@@ -52,6 +54,16 @@ Release artifacts are signed with the the following GPG key:
 [artichoke ruby]: https://github.com/artichoke/artichoke
 [docker-nightly]: https://github.com/artichoke/docker-artichoke-nightly
 [nightly-releases]: https://github.com/artichoke/nightly/releases
+[`x86_64-unknown-linux-gnu`]:
+  https://github.com/artichoke/nightly/releases/latest/download/artichoke-nightly-x86_64-unknown-linux-gnu.tar.gz
+[`x86_64-unknown-linux-musl`]:
+  https://github.com/artichoke/nightly/releases/latest/download/artichoke-nightly-x86_64-unknown-linux-musl.tar.gz
+[`x86_64-apple-darwin`]:
+  https://github.com/artichoke/nightly/releases/latest/download/artichoke-nightly-x86_64-apple-darwin.tar.gz
+[`x86_64-pc-windows-msvc`]:
+  https://github.com/artichoke/nightly/releases/latest/download/artichoke-nightly-x86_64-pc-windows-msvc.zip
+[`aarch64-apple-darwin`]:
+  https://github.com/artichoke/nightly/releases/latest/download/artichoke-nightly-aarch64-apple-darwin.tar.gz
 [`ruby-build`]: https://github.com/rbenv/ruby-build
 [artichoke/nightly#20]: https://github.com/artichoke/nightly/pull/20
 [artichoke/nightly@84e687e866edb52a43a4f462accf3020fe8797f1]:
