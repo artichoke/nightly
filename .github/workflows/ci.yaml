@@ -10,6 +10,22 @@ name: CI
   schedule:
     - cron: "0 0 * * TUE"
 jobs:
+  ruby:
+    name: Lint and format Ruby
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Ruby toolchain
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ".ruby-version"
+          bundler-cache: true
+
+      - name: Lint and check formatting with Rubocop
+        run: bundle exec rubocop --format github
+
   text:
     name: Lint and format text
     runs-on: ubuntu-latest
