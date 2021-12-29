@@ -216,7 +216,7 @@ jobs:
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
-          artifact: ${{ steps.build.outputs.asset }}
+          artifacts: ${{ steps.build.outputs.asset }}
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
@@ -229,7 +229,7 @@ jobs:
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
-          artifact: ${{ steps.build.outputs.asset }}.asc
+          artifacts: ${{ steps.build.outputs.asset }}.asc
           artifactContentType: "text/plain"
 
   finalize-release:
