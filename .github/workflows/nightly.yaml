@@ -45,14 +45,13 @@ jobs:
 
       - name: Create GitHub release
         id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.release_version.outputs.tag }}
-          release_name: ${{ steps.release_version.outputs.name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_version.outputs.tag }}
           draft: true
           prerelease: false
+          name: ${{ steps.release_version.outputs.name }}
           body: artichoke/artichoke@${{ steps.latest_commit.outputs.commit }}
 
       - name: Save release commit hash to artifact
@@ -208,24 +207,30 @@ jobs:
           fi
 
       - name: Upload release archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ steps.release_info.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.asset }}
-          asset_name: ${{ steps.build.outputs.asset }}
-          asset_content_type: ${{ steps.build.outputs.content_type }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_version.outputs.version }}
+          draft: true
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          artifact: ${{ steps.build.outputs.asset }}
+          artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ steps.release_info.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.asset }}.asc
-          asset_name: ${{ steps.build.outputs.asset }}.asc
-          asset_content_type: "text/plain"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_version.outputs.version }}
+          draft: true
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          artifact: ${{ steps.build.outputs.asset }}.asc
+          artifactContentType: "text/plain"
 
   finalize-release:
     name: Publish Release
@@ -242,11 +247,16 @@ jobs:
         id: publish_info
         run: echo "::set-output name=release_id::$(cat artifacts/release-id)"
 
-      - uses: eregon/publish-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish release
+        uses: ncipollo/release-action@v1
         with:
-          release_id: ${{ steps.publish_info.outputs.release_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_version.outputs.version }}
+          draft: false
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
 
       - uses: eregon/keep-last-n-releases@v1
         env:
