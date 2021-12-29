@@ -210,26 +210,26 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.release_version.outputs.version }}
+          tag: ${{ steps.release_info.outputs.version }}
           draft: true
           allowUpdates: true
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
-          artifact: ${{ steps.build.outputs.asset }}
+          artifacts: ${{ steps.build.outputs.asset }}
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.release_version.outputs.version }}
+          tag: ${{ steps.release_info.outputs.version }}
           draft: true
           allowUpdates: true
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
-          artifact: ${{ steps.build.outputs.asset }}.asc
+          artifacts: ${{ steps.build.outputs.asset }}.asc
           artifactContentType: "text/plain"
 
   finalize-release:
@@ -245,13 +245,13 @@ jobs:
 
       - name: Set publish_info
         id: publish_info
-        run: echo "::set-output name=release_id::$(cat artifacts/release-id)"
+        run: echo "::set-output name=release_tag::$(cat artifacts/release-version)"
 
       - name: Publish release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.release_version.outputs.version }}
+          tag: ${{ steps.publish_info.outputs.release_tag }}
           draft: false
           allowUpdates: true
           omitBodyDuringUpdate: true
