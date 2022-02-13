@@ -12,7 +12,6 @@ name: Audit
 jobs:
   ruby:
     name: Audit Ruby Dependencies
-    if: ${has_bundler_audit}
     runs-on: ubuntu-latest
 
     steps:
