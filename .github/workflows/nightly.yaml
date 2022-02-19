@@ -144,21 +144,11 @@ jobs:
         shell: bash
         run: cp artichoke/rust-toolchain rust-toolchain
 
-      - name: Setup .ruby-version override
-        shell: bash
-        run: cp artichoke/.ruby-version .ruby-version
-
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           target: ${{ matrix.target }}
-
-      - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ".ruby-version"
-          bundler-cache: true
 
       - name: Import GPG key
         id: import_gpg
@@ -191,7 +181,7 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
-            "/c/Program Files/7-Zip/7z.exe" a "$staging.zip" "$staging"
+            7z a "$staging.zip" "$staging"
             echo "${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}" | gpg --passphrase-fd 0 --pinentry-mode loopback --batch --yes --detach-sign --armor --local-user AF57A37CAC061452 --output  "$staging.zip.asc" "$staging.zip"
             gpg --batch --verify "$staging.zip.asc" "$staging.zip"
             echo "::set-output name=asset::$staging.zip"
