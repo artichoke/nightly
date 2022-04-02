@@ -30,7 +30,7 @@ jobs:
           echo "::set-output name=name::${artichoke_nightly_version}"
 
       - name: Clone Artichoke
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -129,7 +129,7 @@ jobs:
           echo "::set-output name=commit::${release_commit}"
 
       - name: Clone Artichoke
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: artichoke/artichoke
           path: artichoke
