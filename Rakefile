@@ -8,7 +8,7 @@ require 'rubocop/rake_task'
 task default: %i[format lint]
 
 desc 'Lint sources'
-task lint: %i[lint:rubocop:auto_correct]
+task lint: %i[lint:rubocop:autocorrect]
 
 namespace :lint do
   RuboCop::RakeTask.new(:rubocop)
