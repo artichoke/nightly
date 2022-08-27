@@ -175,12 +175,6 @@ jobs:
         if: matrix.build == 'linux-musl'
         run: sudo apt install musl-tools
 
-      - name: Set strip linker flag
-        if: runner.os == 'Linux' || runner.os == 'macOS'
-        # strip binary artifacts with a linker flag
-        # https://github.com/rust-lang/cargo/issues/3483#issuecomment-431209957
-        run: echo "RUSTFLAGS=-C link-arg=-s" >> $GITHUB_ENV
-
       - name: Build release artifacts
         working-directory: artichoke
         run: cargo build --verbose --release --target ${{ matrix.target }}
