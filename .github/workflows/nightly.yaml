@@ -258,6 +258,7 @@ jobs:
           omitPrereleaseDuringUpdate: true
 
       - uses: eregon/keep-last-n-releases@v1
+        if: github.event_name == "schedule"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
