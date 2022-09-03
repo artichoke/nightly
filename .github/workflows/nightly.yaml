@@ -207,7 +207,7 @@ jobs:
           staging="artichoke-nightly-${{ matrix.target }}"
           mkdir -p "$staging"/
           cp artichoke/{README.md,LICENSE} "$staging/"
-          cp THIRDPARTY > "$staging/THIRDPARTY.txt"
+          cp THIRDPARTY "$staging/THIRDPARTY.txt"
           if [ "${{ runner.os }}" = "Windows" ]; then
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
