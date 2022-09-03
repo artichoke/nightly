@@ -147,6 +147,7 @@ jobs:
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
+          output_file: THIRDPARTY
 
       - name: Clone Artichoke
         uses: actions/checkout@v3
@@ -206,7 +207,7 @@ jobs:
           staging="artichoke-nightly-${{ matrix.target }}"
           mkdir -p "$staging"/
           cp artichoke/{README.md,LICENSE} "$staging/"
-          echo "$THIRD_PARTY_LICENSES" > "$staging/THIRDPARTY.txt"
+          cp THIRDPARTY > "$staging/THIRDPARTY.txt"
           if [ "${{ runner.os }}" = "Windows" ]; then
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
@@ -220,9 +221,6 @@ jobs:
             echo "::set-output name=asset::$staging.tar.gz"
             echo "::set-output name=content_type::application/gzip"
           fi
-        env:
-          THIRD_PARTY_LICENSES: |
-            ${{ steps.generate_third_party.outputs.third_party_licenses }}
 
       - name: GPG sign archive
         run: |
