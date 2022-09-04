@@ -821,12 +821,20 @@ def main(args):
 
         return 0
     except subprocess.CalledProcessError as e:
-        print(
-            f"""Error: failed to invoke command.
-            \tCommand: {e.cmd}
-            \tReturn Code: {e.returncode}""",
-            file=sys.stderr,
-        )
+        print("Error: failed to invoke command", file=sys.stderr)
+        print(f"    Command: {e.cmd}", file=sys.stderr)
+        print(f"    Return Code: {e.returncode}", file=sys.stderr)
+        if e.stdout:
+            print()
+            print("Output:", file=sys.stderr)
+            for line in e.stdout.splitlines():
+                print(f"    {line}", file=sys.stderr)
+        if e.stderr:
+            print()
+            print("Error Output:", file=sys.stderr)
+            for line in e.stderr.splitlines():
+                print(f"    {line}", file=sys.stderr)
+        print()
         print(traceback.format_exc(), file=sys.stderr)
         return e.returncode
     except Exception as e:
