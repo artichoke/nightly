@@ -160,7 +160,7 @@ def main(args):
 
     for artifact in artifacts:
         if not artifact.is_file():
-            print("Error: {artifact} does not exist", file=sys.stderr)
+            print(f"Error: artifact file {artifact} does not exist", file=sys.stderr)
             return 1
 
     if len(artifacts) > 1:
@@ -191,10 +191,11 @@ def main(args):
             \tReturn Code: {e.returncode}""",
             file=sys.stderr,
         )
+        print(traceback.format_exc(), file=sys.stderr)
         return e.returncode
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        print(traceback.format_exc())
+        print(traceback.format_exc(), file=sys.stderr)
         return 1
 
 

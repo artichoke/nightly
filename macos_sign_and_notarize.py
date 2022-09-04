@@ -733,7 +733,11 @@ def main(args):
 
     for binary in binaries:
         if not binary.is_file():
-            print("Error: {binary} does not exist", file=sys.stderr)
+            print(f"Error: binary file {binary} does not exist", file=sys.stderr)
+            return 1
+    for resource in resources:
+        if not resource.is_file():
+            print(f"Error: resource file {resource} does not exist", file=sys.stderr)
             return 1
 
     try:
@@ -765,10 +769,11 @@ def main(args):
             \tReturn Code: {e.returncode}""",
             file=sys.stderr,
         )
+        print(traceback.format_exc(), file=sys.stderr)
         return e.returncode
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        print(traceback.format_exc())
+        print(traceback.format_exc(), file=sys.stderr)
         return 1
     finally:
         # Purge keychain.
