@@ -176,9 +176,9 @@ def notarization_app_specific_password():
     codesigning identity's Apple ID.
     """
 
-    if app_specific_password := os.getenv("APPLE_ID_APP_PASSWORD"):
+    if app_specific_password := os.getenv("MACOS_NOTARIZE_APP_PASSWORD"):
         return app_specific_password
-    raise Exception("APPLE_ID_APP_PASSWORD environment variable is required")
+    raise Exception("MACOS_NOTARIZE_APP_PASSWORD environment variable is required")
 
 
 def notarization_team_id():
@@ -281,7 +281,7 @@ def import_notarization_credentials():
         # xcrun notarytool store-credentials \
         #   "$notarytool_credentials_profile" \
         #   --apple-id "apple-codesign@artichokeruby.org" \
-        #   --password "$APPLE_ID_APP_PASSWORD" \
+        #   --password "$MACOS_NOTARIZE_APP_PASSWORD" \
         #   --team-id "VDKP67932G" \
         #   --keychain "$keychain_path"
         subprocess.run(
@@ -326,10 +326,10 @@ def import_codesigning_certificate():
         except binascii.Error:
             raise Exception("MACOS_CERTIFICATE must be base64 encoded")
 
-        certificate_password = os.getenv("MACOS_CERTIFICATE_PWD")
+        certificate_password = os.getenv("MACOS_CERTIFICATE_PASSPHRASE")
         if not certificate_password:
             raise Exception(
-                "MACOS_CERTIFICATE_PASSWORD environment variable is required"
+                "MACOS_CERTIFICATE_PASSPHRASE environment variable is required"
             )
 
         with tempfile.TemporaryDirectory() as tempdirname:
@@ -754,7 +754,8 @@ def main(args):
         staple_bundle(bundle=bundle)
 
         validate(bundle=bundle, binary_names=[binary.name for binary in binaries])
-        set_output(name="bundle", value=bundle)
+        set_output(name="asset", value=bundle)
+        set_output(name="content_type", value="application/x-apple-diskimage")
 
         return 0
     except subprocess.CalledProcessError as e:
