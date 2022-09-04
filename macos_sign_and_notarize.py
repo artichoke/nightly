@@ -2,16 +2,16 @@
 
 import base64
 import binascii
-import subprocess
-from pathlib import Path
-from contextlib import contextmanager
-import sys
-import secrets
-import os
-import tempfile
-import shutil
 import json
+import os
+import secrets
+import shutil
+import subprocess
+import sys
+import tempfile
 import traceback
+from contextlib import contextmanager
+from pathlib import Path
 
 
 @contextmanager
