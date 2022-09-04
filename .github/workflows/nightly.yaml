@@ -232,7 +232,7 @@ jobs:
 
       - name: GPG sign archive
         id: gpg_signing
-        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --binary "${{ steps.build.outputs.asset }}"
+        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@v1

@@ -56,28 +56,28 @@ def emit_metadata():
             print(f"GitHub SHA: {sha}")
 
 
-def codesigning_identity():
+def signing_identity():
     """
-    Codesigning identity and GPG key fingerprint.
+    Signing identity and GPG key fingerprint.
     """
 
     return "1C4A856ACF86EC1EE841180FAF57A37CAC061452"
 
 
-def gpg_sign_binary(*, binary_path, release_name):
+def gpg_sign_artifact(*, artifact_path, release_name):
     """
-    Create a GPG signature for the given binary.
+    Create a GPG signature for the given artifact.
     """
 
     stage = Path("dist").joinpath(release_name)
-    with log_group(f"Create GPG signature [{binary_path.name}]"):
+    with log_group(f"Create GPG signature [{artifact_path.name}]"):
         try:
             shutil.rmtree(stage)
         except FileNotFoundError:
             pass
         os.makedirs(stage, exist_ok=True)
 
-        asc = stage.joinpath(f"{binary_path.name}.asc")
+        asc = stage.joinpath(f"{artifact_path.name}.asc")
         subprocess.run(
             [
                 "gpg",
@@ -87,19 +87,19 @@ def gpg_sign_binary(*, binary_path, release_name):
                 "-vv",
                 "--armor",
                 "--local-user",
-                codesigning_identity(),
+                signing_identity(),
                 "--output",
                 str(asc),
-                str(binary_path),
+                str(artifact_path),
             ],
             check=True,
         )
         return asc
 
 
-def validate(*, binary_name, asc):
+def validate(*, artifact_name, asc):
     """
-    Verify GPG signature for the given binary.
+    Verify GPG signature for the given artifact.
     """
 
     with log_group("Verify GPG signature"):
@@ -110,7 +110,7 @@ def validate(*, binary_name, asc):
                 "--verify",
                 "-vv",
                 str(asc),
-                str(binary_name),
+                str(artifact_name),
             ],
             check=True,
         )
@@ -122,12 +122,12 @@ def main(args):
         return 1
 
     release_name, *args = args
-    binaries = []
+    artifacts = []
     append_next = None
     for arg in args:
         if append_next is None:
-            if arg == "--binary":
-                append_next = binaries
+            if arg == "--artifact":
+                append_next = artifacts
                 continue
             print(f"Unexpected argument: {arg}", file=sys.stderr)
             return 1
@@ -135,36 +135,36 @@ def main(args):
         append_next = None
 
     if append_next is not None:
-        if append_next is binaries:
-            print("Error: unterminated --binary flag", file=sys.stderr)
+        if append_next is artifacts:
+            print("Error: unterminated --artifact flag", file=sys.stderr)
         return 1
 
-    if not binaries:
-        print("Error: no binaries passed to be codesigned", file=sys.stderr)
+    if not artifacts:
+        print("Error: no artifacts passed to be signed", file=sys.stderr)
         return 1
 
-    for binary in binaries:
-        if not binary.is_file():
-            print("Error: {binary} does not exist", file=sys.stderr)
+    for artifact in artifacts:
+        if not artifact.is_file():
+            print("Error: {artifact} does not exist", file=sys.stderr)
             return 1
 
-    if len(binaries) > 1:
+    if len(artifacts) > 1:
         print(
             (
-                "Error: Too many --binary arguments. "
-                "GPG codesigning script can only sign one binary at a time."
+                "Error: Too many --artifact arguments. "
+                "GPG signing script can only sign one artifact at a time."
             ),
             file=sys.stderr,
         )
         return 1
 
-    binary = binaries[0]
+    artifact = artifacts[0]
 
     try:
         emit_metadata()
 
-        signature = gpg_sign_binary(binary_path=binary, release_name=release_name)
-        validate(binary_name=binary, asc=signature)
+        signature = gpg_sign_artifact(artifact_path=artifact, release_name=release_name)
+        validate(artifact_name=artifact, asc=signature)
 
         set_output(name="signature", value=signature)
 
