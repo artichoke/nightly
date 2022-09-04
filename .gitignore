@@ -224,3 +224,4 @@ build-iPhoneSimulator/
 # Overrides
 
 *.dmg
+/dist/*
