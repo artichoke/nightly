@@ -193,7 +193,7 @@ def delete_keychain():
                 check=True,
             )
             print(f"Keychain deleted from {keychain_path()}")
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             # keychain does not exist
             print(f"Keychain not found at {keychain_path()}, ignoring ...")
 
