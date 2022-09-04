@@ -271,7 +271,10 @@ def import_codesigning_certificate():
         with tempfile.TemporaryDirectory() as tempdirname:
             cert = Path(tempdirname).joinpath("certificate.p12")
             cert.write_bytes(certificate)
-            # security import certificate.p12 -k "$keychain_path" -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+            # security import certificate.p12 \
+            #   -k "$keychain_path" \
+            #   -P "$MACOS_CERTIFICATE_PWD" \
+            #   -T /usr/bin/codesign
             subprocess.run(
                 [
                     "security",
@@ -302,7 +305,9 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password):
     import_codesigning_certificate()
 
     with log_group("Prepare keychain for codesigning"):
-        # security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k "$keychain_password" "$keychain_path"
+        # security set-key-partition-list \
+        #   -S "apple-tool:,apple:,codesign:" \
+        #   -s -k "$keychain_password" "$keychain_path"
         subprocess.run(
             [
                 "security",
@@ -340,7 +345,9 @@ def codesign_binary(*, binary_path):
                 str(keychain_path()),
                 "--sign",
                 codesigning_identity(),
-                # enable hardend runtime: https://developer.apple.com/documentation/security/hardened_runtime
+                # Enable hardend runtime:
+                #
+                # - https://developer.apple.com/documentation/security/hardened_runtime
                 "--options=runtime",
                 "--strict=all",
                 "--timestamp",
@@ -451,7 +458,10 @@ def notarize_bundle(*, bundle):
     if not notarization_request:
         raise Exception("Notarization request did not return an id on success")
 
-    # xcrun notarytool log 2efe2717-52ef-43a5-96dc-0797e4ca1041 --keychain-profile "AC_PASSWORD" developer_log.json
+    # xcrun notarytool log \
+    #   2efe2717-52ef-43a5-96dc-0797e4ca1041 \
+    #  --keychain-profile "AC_PASSWORD" \
+    #   developer_log.json
     with log_group("Fetch notarization logs"):
         with tempfile.TemporaryDirectory() as tempdirname:
             logs = Path(tempdirname).joinpath("notarization_logs.json")
@@ -510,7 +520,10 @@ def validate(*, bundle, binary_names):
         )
 
     with log_group("Verify disk image signature"):
-        # spctl -a -t open --context context:primary-signature 2022-09-03-test-codesign-notarize-dmg-v1.dmg -v
+        # spctl -a -t open \
+        #   --context context:primary-signature \
+        #   2022-09-03-test-codesign-notarize-dmg-v1.dmg \
+        #   -v
         subprocess.run(
             [
                 "/usr/sbin/spctl",
@@ -598,7 +611,9 @@ def main(args):
         return 0
     except subprocess.CalledProcessError as e:
         print(
-            f"Error: failed to invoke command.\n\tCommand: {e.cmd}\n\tReturn Code: {e.returncode}",
+            f"""Error: failed to invoke command.
+            \tCommand: {e.cmd}
+            \tReturn Code: {e.returncode}""",
             file=sys.stderr,
         )
         return e.returncode
