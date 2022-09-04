@@ -40,11 +40,7 @@ def attach_disk_image(image):
     finally:
         with log_group("Detatching disk image"):
             subprocess.run(
-                [
-                    "/usr/bin/hdiutil",
-                    "detach",
-                    str(mounted_image)
-                ],
+                ["/usr/bin/hdiutil", "detach", str(mounted_image)],
                 check=True,
             )
 
@@ -69,6 +65,7 @@ def emit_metadata():
             print(f"GitHub Ref Name: {ref_name}")
         if sha := os.getenv("GITHUB_SHA"):
             print(f"GitHub SHA: {sha}")
+
 
 def keychain_path():
     """
@@ -200,6 +197,7 @@ def delete_keychain():
             # keychain does not exist
             print(f"Keychain not found at {keychain_path()}, ignoring ...")
 
+
 def import_notarization_credentials():
     """
     Import credentials required for notarytool to the codesigning and notarization
@@ -260,7 +258,9 @@ def import_codesigning_certificate():
 
         certificate_password = os.getenv("MACOS_CERTIFICATE_PWD")
         if not certificate_password:
-            raise Exception("MACOS_CERTIFICATE_PASSWORD environment variable is required")
+            raise Exception(
+                "MACOS_CERTIFICATE_PASSWORD environment variable is required"
+            )
 
         with tempfile.TemporaryDirectory() as tempdirname:
             cert = Path(tempdirname).joinpath("certificate.p12")
@@ -529,7 +529,7 @@ def validate(*, bundle, binary_names):
                         "--deep",
                         "--strict=all",
                         "-vvv",
-                        str(mounted_binary)
+                        str(mounted_binary),
                     ],
                     check=True,
                 )
@@ -541,7 +541,7 @@ def validate(*, bundle, binary_names):
                         "--display",
                         "--check-notarization",
                         "-vvv",
-                        str(mounted_binary)
+                        str(mounted_binary),
                     ],
                     check=True,
                 )
@@ -579,13 +579,20 @@ def main(args):
         for binary in binaries:
             codesign_binary(binary_path=binary)
 
-        bundle = create_notarization_bundle(release_name="2022-09-03-test-codesign-notarize-dmg-v1", binaries=binaries, resources=resources)
+        bundle = create_notarization_bundle(
+            release_name="2022-09-03-test-codesign-notarize-dmg-v1",
+            binaries=binaries,
+            resources=resources,
+        )
         notarize_bundle(bundle=bundle)
         staple_bundle(bundle=bundle)
         validate(bundle=bundle, binary_names=[binary.name for binary in binaries])
         return 0
     except subprocess.CalledProcessError as e:
-        print(f"Error: failed to invoke command.\n\tCommand: {e.cmd}\n\tReturn Code: {e.returncode}", file=sys.stderr)
+        print(
+            f"Error: failed to invoke command.\n\tCommand: {e.cmd}\n\tReturn Code: {e.returncode}",
+            file=sys.stderr,
+        )
         return e.returncode
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
