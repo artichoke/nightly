@@ -10,6 +10,32 @@ name: CI
   schedule:
     - cron: "0 0 * * TUE"
 jobs:
+  python:
+    name: Lint and format Python
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv --upgrade-deps venv
+          venv/bin/pip install -r requirements.txt
+
+      - name: Run black
+        run: venv/bin/black --check --diff --verbose .
+
+      - name: Run isort
+        run: venv/bin/isort --check --diff --verbose .
+
+      - name: Run flake8
+        run: venv/bin/flake8 .
+
   ruby:
     name: Lint and format Ruby
     runs-on: ubuntu-latest
