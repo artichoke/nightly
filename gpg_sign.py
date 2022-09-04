@@ -154,7 +154,10 @@ def main(args):
             return 1
 
     if len(binaries) > 1:
-        print("Error: Too many --binary arguments. GPG codesigning script can only sign one binary at a time.", file=sys.stderr)
+        print(
+            "Error: Too many --binary arguments. GPG codesigning script can only sign one binary at a time.",
+            file=sys.stderr,
+        )
         return 1
 
     binary = binaries[0]
