@@ -14,8 +14,24 @@ from contextlib import contextmanager
 from pathlib import Path
 
 
+def set_output(*, name, value):
+    """
+    Set an output for a GitHub Actions job.
+
+    https://docs.github.com/en/actions/using-jobs/defining-outputs-for-jobs
+    """
+
+    print(f"::set-output name={name}::{value}")
+
+
 @contextmanager
 def log_group(group):
+    """
+    Create an expandable log group in GitHub Actions job logs.
+
+    https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#grouping-log-lines
+    """
+
     print(f"::group::{group}")
     try:
         yield
@@ -367,20 +383,21 @@ def create_notarization_bundle(*, release_name, binaries, resources):
     Returns `Path` object to the newly created DMG archive.
     """
 
-    with log_group("Create disk image for notarization"):
-        dmg = Path(f"{release_name}.dmg")
-        dmg.unlink(missing_ok=True)
+    stage = Path("dist").joinpath(release_name)
+    dmg = Path("dist").joinpath(f"{release_name}.dmg")
 
+    with log_group("Create disk image for notarization"):
+        dmg.unlink(missing_ok=True)
         try:
-            shutil.rmtree(release_name)
+            shutil.rmtree(stage)
         except FileNotFoundError:
             pass
-        os.makedirs(release_name, exist_ok=True)
+        os.makedirs(stage, exist_ok=True)
 
         for binary in binaries:
-            shutil.copy(binary, release_name)
+            shutil.copy(binary, stage)
         for resource in resources:
-            shutil.copy(resource, release_name)
+            shutil.copy(resource, stage)
 
         # notarytool submit works only with UDIF disk images, signed "flat"
         # installer packages, and zip files.
@@ -402,7 +419,7 @@ def create_notarization_bundle(*, release_name, binaries, resources):
                 "-volname",
                 "Artichoke Ruby nightly",
                 "-srcfolder",
-                release_name,
+                str(stage),
                 "-ov",
                 "-format",
                 "UDZO",
@@ -411,8 +428,8 @@ def create_notarization_bundle(*, release_name, binaries, resources):
             ],
             check=True,
         )
-        codesign_binary(binary_path=dmg)
-        return dmg
+    codesign_binary(binary_path=dmg)
+    return dmg
 
 
 def notarize_bundle(*, bundle):
@@ -570,9 +587,10 @@ def validate(*, bundle, binary_names):
 
 def main(args):
     if not args:
-        print("Error: pass binaries to sign as positional arguments", file=sys.stderr)
+        print("Error: pass name of release as first argument", file=sys.stderr)
         return 1
 
+    release_name, *args = args
     binaries = []
     resources = []
     append_next = None
@@ -585,8 +603,20 @@ def main(args):
                 append_next = resources
                 continue
             print(f"Unexpected argument: {arg}", file=sys.stderr)
+            return 1
         append_next.append(Path(arg))
         append_next = None
+
+    if append_next is not None:
+        if append_next is binaries:
+            print("Error: unterminated --binary flag", file=sys.stderr)
+        if append_next is resources:
+            print("Error: unterminated --resource flag", file=sys.stderr)
+        return 1
+
+    if not binaries:
+        print("Error: no binaries passed to be codesigned", file=sys.stderr)
+        return 1
 
     for binary in binaries:
         if not binary.is_file():
@@ -594,6 +624,8 @@ def main(args):
             return 1
 
     try:
+        emit_metadata()
+
         keychain_password = secrets.token_urlsafe()
         setup_codesigning_and_notarization_keychain(keychain_password=keychain_password)
 
@@ -601,13 +633,16 @@ def main(args):
             codesign_binary(binary_path=binary)
 
         bundle = create_notarization_bundle(
-            release_name="2022-09-03-test-codesign-notarize-dmg-v1",
+            release_name=release_name,
             binaries=binaries,
             resources=resources,
         )
         notarize_bundle(bundle=bundle)
         staple_bundle(bundle=bundle)
+
         validate(bundle=bundle, binary_names=[binary.name for binary in binaries])
+        set_output(name="bundle", value=bundle)
+
         return 0
     except subprocess.CalledProcessError as e:
         print(
