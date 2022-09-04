@@ -119,6 +119,9 @@ jobs:
       RUST_BACKTRACE: 1
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Get release download URL
         uses: actions/download-artifact@v3
         with:
@@ -170,6 +173,11 @@ jobs:
         with:
           profile: minimal
           target: ${{ matrix.target }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
@@ -223,9 +231,8 @@ jobs:
           fi
 
       - name: GPG sign archive
-        run: |
-          gpg --batch --yes --detach-sign --armor --local-user "${{ steps.import_gpg.outputs.fingerprint }}" --output "${{ steps.build.outputs.asset }}.asc" "${{ steps.build.outputs.asset }}"
-          gpg --batch --verify "${{ steps.build.outputs.asset }}.asc" "${{ steps.build.outputs.asset }}"
+        id: gpg_signing
+        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --binary "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@v1
@@ -250,7 +257,7 @@ jobs:
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
-          artifacts: ${{ steps.build.outputs.asset }}.asc
+          artifacts: ${{ steps.gpg_signing.outputs.signature }}
           artifactContentType: "text/plain"
 
   finalize-release:
