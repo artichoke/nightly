@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 
-import base64
-import binascii
-import json
 import os
-import secrets
 import shutil
 import subprocess
 import sys
-import tempfile
 import traceback
 from contextlib import contextmanager
 from pathlib import Path
