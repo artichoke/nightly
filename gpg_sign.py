@@ -78,7 +78,7 @@ def gpg_sign_artifact(*, artifact_path, release_name):
         os.makedirs(stage, exist_ok=True)
 
         asc = stage.joinpath(f"{artifact_path.name}.asc")
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "gpg",
                 "--batch",
@@ -92,8 +92,16 @@ def gpg_sign_artifact(*, artifact_path, release_name):
                 str(asc),
                 str(artifact_path),
             ],
-            check=True,
+            # capture output because `gpg --detatch-sign` writes to stderr which
+            # prevents the GitHub Actions log group from working correctly.
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+
+        for line in proc.stdout.splitlines():
+            print(line)
+
         return asc
 
 
@@ -103,7 +111,7 @@ def validate(*, artifact_name, asc):
     """
 
     with log_group("Verify GPG signature"):
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "gpg",
                 "--batch",
@@ -112,8 +120,15 @@ def validate(*, artifact_name, asc):
                 str(asc),
                 str(artifact_name),
             ],
-            check=True,
+            # capture output because `gpg --verify` writes to stderr which
+            # prevents the GitHub Actions log group from working correctly.
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+
+        for line in proc.stdout.splitlines():
+            print(line)
 
 
 def main(args):
