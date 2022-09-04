@@ -462,7 +462,7 @@ def notarize_bundle(*, bundle):
             ],
             check=True,
             capture_output=True,
-            encoding="utf8",
+            text=True,
         )
         if proc.stderr:
             print(proc.stderr, file=sys.stderr)
