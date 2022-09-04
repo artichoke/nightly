@@ -74,6 +74,7 @@ def keychain_path():
 
     This path is a constant.
     """
+
     # If running on GitHub Actions, use the `RUNNER_TEMP` directory.
     #
     # `RUNNER_TEMP` is the path to a temporary directory on the runner. This
@@ -91,6 +92,7 @@ def notarytool_credentials_profile():
 
     This profile is a constant.
     """
+
     return "artichoke-apple-codesign-notarize"
 
 
@@ -98,6 +100,7 @@ def codesigning_identity():
     """
     Codesigning identity and name of the Apple Developer ID Application.
     """
+
     return "Developer ID Application: Ryan Lopopolo (VDKP67932G)"
 
 
@@ -105,6 +108,7 @@ def notarization_apple_id():
     """
     Apple ID belonging to the codesigning identity.
     """
+
     return "apple-codesign@artichokeruby.org"
 
 
@@ -113,6 +117,7 @@ def notarization_app_specific_password():
     App-specific password for the notarization process belonging to the
     codesigning identity's Apple ID.
     """
+
     if app_specific_password := os.getenv("APPLE_ID_APP_PASSWORD"):
         return app_specific_password
     raise Exception("APPLE_ID_APP_PASSWORD environment variable is required")
@@ -122,6 +127,7 @@ def notarization_team_id():
     """
     Team ID belonging to the codesigning identity.
     """
+
     return "VDKP67932G"
 
 
@@ -316,6 +322,7 @@ def codesign_binary(*, binary_path):
     """
     Run the codesigning process on the given binary.
     """
+
     # /usr/bin/codesign \
     #   --keychain "$keychain_path" \
     #   --sign "Developer ID Application: Ryan Lopopolo (VDKP67932G)" \
@@ -489,6 +496,7 @@ def validate(*, bundle, binary_names):
     """
     Verify the stapled disk image and codesigning of binaries within it.
     """
+
     with log_group("Verify disk image staple"):
         subprocess.run(
             [
