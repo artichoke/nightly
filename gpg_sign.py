@@ -92,6 +92,7 @@ def gpg_sign_artifact(*, artifact_path, release_name):
                 str(asc),
                 str(artifact_path),
             ],
+            check=True,
             # capture output because `gpg --detatch-sign` writes to stderr which
             # prevents the GitHub Actions log group from working correctly.
             stdout=subprocess.PIPE,
@@ -120,6 +121,7 @@ def validate(*, artifact_name, asc):
                 str(asc),
                 str(artifact_name),
             ],
+            check=True,
             # capture output because `gpg --verify` writes to stderr which
             # prevents the GitHub Actions log group from working correctly.
             stdout=subprocess.PIPE,
