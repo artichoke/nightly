@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import traceback
+import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -40,18 +41,23 @@ def log_group(group):
 
 
 @contextmanager
-def attach_disk_image(image):
+def attach_disk_image(image, *, readwrite=False):
     try:
         with log_group("Attaching disk image"):
-            subprocess.run(
-                [
+            if readwrite:
+                command = [
                     "/usr/bin/hdiutil",
                     "attach",
+                    "-readwrite",
+                    "-noverify",
+                    "-noautoopen",
                     str(image),
-                ],
-                check=True,
-            )
-        mounted_image = Path("/Volumes/Artichoke Ruby nightly")
+                ]
+            else:
+                command = ["/usr/bin/hdiutil", "attach", str(image)]
+
+            subprocess.run(command, check=True)
+        mounted_image = disk_image_mount_path()
         yield mounted_image
     finally:
         with log_group("Detatching disk image"):
@@ -59,6 +65,42 @@ def attach_disk_image(image):
                 ["/usr/bin/hdiutil", "detach", str(mounted_image)],
                 check=True,
             )
+
+
+def get_image_size(image):
+    """
+    Compute the size in megabytes of a disk image.
+
+    This method is influenced by `create-dmg`:
+    https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg#L306-L315
+    """
+
+    proc = subprocess.run(
+        ["/usr/bin/sw_vers", "-productVersion"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    major, _minor, _patch = proc.stdout.strip().split(".")
+
+    if int(major) >= 12:
+        proc = subprocess.run(
+            ["/usr/bin/du", "-B", "512", "-s", str(image)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        size = int(proc.stdout.split()[0])
+    else:
+        proc = subprocess.run(
+            ["/usr/bin/du", "-s", str(image)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        size = int(proc.stdout.split(" ")[0])
+
+    return (size * 512 / 1000 / 1000) + 1
 
 
 def emit_metadata():
@@ -147,6 +189,22 @@ def notarization_team_id():
     return "VDKP67932G"
 
 
+def disk_image_volume_name():
+    """
+    Volume name for the newly created DMG disk image.
+    """
+
+    return "Artichoke Ruby nightly"
+
+
+def disk_image_mount_path():
+    """
+    Mount path for the newly created DMG disk image.
+    """
+
+    return Path("/Volumes").joinpath(disk_image_volume_name())
+
+
 def create_keychain(*, keychain_password):
     """
     Create a new keychain for the codesigning and notarization process.
@@ -172,13 +230,7 @@ def create_keychain(*, keychain_password):
         )
         # security set-keychain-settings -lut 900 "$keychain_path"
         subprocess.run(
-            [
-                "security",
-                "set-keychain-settings",
-                "-lut",
-                "900",
-                str(keychain_path()),
-            ],
+            ["security", "set-keychain-settings", "-lut", "900", str(keychain_path())],
             check=True,
         )
         # security unlock-keychain -p "$keychain_password" "$keychain_path"
@@ -207,11 +259,7 @@ def delete_keychain():
         try:
             # security delete-keychain /path/to/notarization.keychain-db
             subprocess.run(
-                [
-                    "security",
-                    "delete-keychain",
-                    str(keychain_path()),
-                ],
+                ["security", "delete-keychain", str(keychain_path())],
                 check=True,
             )
             print(f"Keychain deleted from {keychain_path()}")
@@ -381,9 +429,13 @@ def create_notarization_bundle(*, release_name, binaries, resources):
     notarization service and prepare for distribution.
 
     Returns `Path` object to the newly created DMG archive.
+
+    This method is influenced by `create-dmg`:
+    https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg
     """
 
     stage = Path("dist").joinpath(release_name)
+    dmg_writable = Path("dist").joinpath(f"{release_name}-temp.dmg")
     dmg = Path("dist").joinpath(f"{release_name}.dmg")
 
     with log_group("Create disk image for notarization"):
@@ -404,6 +456,7 @@ def create_notarization_bundle(*, release_name, binaries, resources):
         #
         # Format types:
         #
+        # UDRW - UDIF read/write image
         # UDZO - UDIF zlib-compressed image
         # ULFO - UDIF lzfse-compressed image (OS X 10.11+ only)
         # ULMO - UDIF lzma-compressed image (macOS 10.15+ only)
@@ -411,23 +464,83 @@ def create_notarization_bundle(*, release_name, binaries, resources):
         # /usr/bin/hdiutil create \
         #    -volname "Artichoke Ruby nightly" \
         #    -srcfolder "$release_name" \
-        #    -ov -format UDZO name.dmg
+        #    -ov -format UDRW name.dmg
         subprocess.run(
             [
                 "/usr/bin/hdiutil",
                 "create",
                 "-volname",
-                "Artichoke Ruby nightly",
+                disk_image_volume_name(),
                 "-srcfolder",
                 str(stage),
                 "-ov",
                 "-format",
-                "UDZO",
+                # Create a read/write image so we can set the DMG icon
+                "UDRW",
                 "-verbose",
+                str(dmg_writable),
+            ],
+            check=True,
+        )
+
+    with log_group("Set disk image icon"):
+        with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
+            dmg_icns_path = mounted_image.joinpath(".VolumeIcon.icns")
+            with tempfile.TemporaryDirectory() as tempdirname:
+                icns = Path(tempdirname).joinpath(".VolumeIcon.icns")
+                urllib.request.urlretrieve(
+                    "https://artichoke.github.io/logo/Artichoke-dmg.icns", str(icns)
+                )
+                shutil.copy(icns, dmg_icns_path)
+            subprocess.run(
+                [
+                    "/usr/bin/SetFile",
+                    "-c",
+                    "icnC",
+                    str(dmg_icns_path),
+                ],
+                check=True,
+            )
+            # Tell the volume that it has a special file attribute
+            subprocess.run(
+                [
+                    "/usr/bin/SetFile",
+                    "-a",
+                    "C",
+                    str(mounted_image),
+                ],
+                check=True,
+            )
+
+    with log_group("Shrink disk image to fit"):
+        subprocess.run(
+            [
+                "/usr/bin/hdiutil",
+                "resize",
+                "-size",
+                f"{get_image_size(dmg_writable)}m",
+                str(dmg_writable),
+            ],
+            check=True,
+        )
+
+    with log_group("Compress disk image"):
+        subprocess.run(
+            [
+                "/usr/bin/hdiutil",
+                "convert",
+                str(dmg_writable),
+                "-format",
+                "UDZO",
+                "-imagekey",
+                "zlib-level=9",
+                "-o",
                 str(dmg),
             ],
             check=True,
         )
+        dmg_writable.unlink()
+
     codesign_binary(binary_path=dmg)
     return dmg
 
