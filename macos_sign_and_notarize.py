@@ -159,7 +159,7 @@ def codesigning_identity():
     Codesigning identity and name of the Apple Developer ID Application.
     """
 
-    return "230CC499559E4A43CFCCD853B938C17E69C5ECB6"
+    return "Developer ID Application: Ryan Lopopolo (VDKP67932G)"
 
 
 def notarization_apple_id():
@@ -233,6 +233,8 @@ def create_keychain(*, keychain_password):
         )
         for line in proc.stdout.splitlines():
             print(line)
+        print(f"Created keychain at {keychain_path()}")
+
         # security set-keychain-settings -lut 900 "$keychain_path"
         proc = subprocess.run(
             ["security", "set-keychain-settings", "-lut", "900", str(keychain_path())],
@@ -243,6 +245,8 @@ def create_keychain(*, keychain_password):
         )
         for line in proc.stdout.splitlines():
             print(line)
+        print("Set keychain to be ephemeral")
+
         # security unlock-keychain -p "$keychain_password" "$keychain_path"
         proc = subprocess.run(
             [
@@ -259,6 +263,7 @@ def create_keychain(*, keychain_password):
         )
         for line in proc.stdout.splitlines():
             print(line)
+        print(f"Unlocked keychain at {keychain_path()}")
 
 
 def delete_keychain():
@@ -280,7 +285,6 @@ def delete_keychain():
         )
         for line in proc.stdout.splitlines():
             print(line)
-        print()
 
         if proc.returncode == 0:
             print(f"Keychain deleted from {keychain_path()}")
@@ -385,22 +389,60 @@ def import_codesigning_certificate():
             for line in proc.stdout.splitlines():
                 print(line)
 
-            proc = subprocess.run(
-                [
-                    "security",
-                    "find-identity",
-                    "-p",
-                    "codesigning",
-                    "-v",
-                    str(keychain_path()),
-                ],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            for line in proc.stdout.splitlines():
-                print(line)
+    with log_group("Import intermediate certificates"):
+        proc = subprocess.run(
+            [
+                "security",
+                "import",
+                "apple-certs/DeveloperIDG2CA.cer",
+                "-k",
+                str(keychain_path()),
+                "-T",
+                "/usr/bin/codesign",
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in proc.stdout.splitlines():
+            print(line)
+
+    with log_group("Import provisioning profile"):
+        proc = subprocess.run(
+            [
+                "security",
+                "import",
+                "apple-certs/artichoke-provisioning-profile-signing.cer",
+                "-k",
+                str(keychain_path()),
+                "-T",
+                "/usr/bin/codesign",
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in proc.stdout.splitlines():
+            print(line)
+
+    with log_group("Show codesigning identities"):
+        proc = subprocess.run(
+            [
+                "security",
+                "find-identity",
+                "-p",
+                "codesigning",
+                str(keychain_path()),
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in proc.stdout.splitlines():
+            print(line)
 
 
 def setup_codesigning_and_notarization_keychain(*, keychain_password):
@@ -843,8 +885,7 @@ def main(args):
         return 1
     finally:
         # Purge keychain.
-        # delete_keychain()
-        pass
+        delete_keychain()
 
 
 if __name__ == "__main__":
