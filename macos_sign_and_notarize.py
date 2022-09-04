@@ -218,7 +218,7 @@ def create_keychain(*, keychain_password):
 
     with log_group("Setup notarization keychain"):
         # security create-keychain -p "$keychain_password" "$keychain_path"
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "security",
                 "create-keychain",
@@ -227,14 +227,24 @@ def create_keychain(*, keychain_password):
                 str(keychain_path()),
             ],
             check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+        for line in proc.stdout.splitlines():
+            print(line)
         # security set-keychain-settings -lut 900 "$keychain_path"
-        subprocess.run(
+        proc = subprocess.run(
             ["security", "set-keychain-settings", "-lut", "900", str(keychain_path())],
             check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+        for line in proc.stdout.splitlines():
+            print(line)
         # security unlock-keychain -p "$keychain_password" "$keychain_path"
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "security",
                 "unlock-keychain",
@@ -243,7 +253,12 @@ def create_keychain(*, keychain_password):
                 str(keychain_path()),
             ],
             check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+        for line in proc.stdout.splitlines():
+            print(line)
 
 
 def delete_keychain():
@@ -256,14 +271,20 @@ def delete_keychain():
     """
 
     with log_group("Delete keychain"):
-        try:
-            # security delete-keychain /path/to/notarization.keychain-db
-            subprocess.run(
-                ["security", "delete-keychain", str(keychain_path())],
-                check=True,
-            )
+        # security delete-keychain /path/to/notarization.keychain-db
+        proc = subprocess.run(
+            ["security", "delete-keychain", str(keychain_path())],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in proc.stdout.splitlines():
+            print(line)
+        print()
+
+        if proc.returncode == 0:
             print(f"Keychain deleted from {keychain_path()}")
-        except subprocess.CalledProcessError:
+        else:
             # keychain does not exist
             print(f"Keychain not found at {keychain_path()}, ignoring ...")
 
@@ -284,7 +305,7 @@ def import_notarization_credentials():
         #   --password "$MACOS_NOTARIZE_APP_PASSWORD" \
         #   --team-id "VDKP67932G" \
         #   --keychain "$keychain_path"
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "/usr/bin/xcrun",
                 "notarytool",
@@ -300,7 +321,12 @@ def import_notarization_credentials():
                 str(keychain_path()),
             ],
             check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+        for line in proc.stdout.splitlines():
+            print(line)
 
 
 def import_codesigning_certificate():
@@ -339,7 +365,7 @@ def import_codesigning_certificate():
             #   -k "$keychain_path" \
             #   -P "$MACOS_CERTIFICATE_PWD" \
             #   -T /usr/bin/codesign
-            subprocess.run(
+            proc = subprocess.run(
                 [
                     "security",
                     "import",
@@ -352,7 +378,29 @@ def import_codesigning_certificate():
                     "/usr/bin/codesign",
                 ],
                 check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
             )
+            for line in proc.stdout.splitlines():
+                print(line)
+
+            proc = subprocess.run(
+                [
+                    "security",
+                    "find-identity",
+                    "-p",
+                    "codesigning",
+                    "-v",
+                    str(keychain_path()),
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            for line in proc.stdout.splitlines():
+                print(line)
 
 
 def setup_codesigning_and_notarization_keychain(*, keychain_password):
@@ -372,7 +420,7 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password):
         # security set-key-partition-list \
         #   -S "apple-tool:,apple:,codesign:" \
         #   -s -k "$keychain_password" "$keychain_path"
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "security",
                 "set-key-partition-list",
@@ -384,7 +432,12 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password):
                 str(keychain_path()),
             ],
             check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+        for line in proc.stdout.splitlines():
+            print(line)
 
 
 def codesign_binary(*, binary_path):
@@ -402,7 +455,7 @@ def codesign_binary(*, binary_path):
     #   --force \
     #   "$binary_path"
     with log_group(f"Run codesigning [{binary_path.name}]"):
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "/usr/bin/codesign",
                 "--keychain",
@@ -420,7 +473,12 @@ def codesign_binary(*, binary_path):
                 str(binary_path),
             ],
             check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
+        for line in proc.stdout.splitlines():
+            print(line)
 
 
 def create_notarization_bundle(*, release_name, binaries, resources):
@@ -777,7 +835,8 @@ def main(args):
         return 1
     finally:
         # Purge keychain.
-        delete_keychain()
+        # delete_keychain()
+        pass
 
 
 if __name__ == "__main__":
