@@ -215,8 +215,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           python3 macos_sign_and_notarize.py "artichoke-nightly-${{ matrix.target }}" \
-            --binary artichoke/target/release/artichoke \
-            --binary artichoke/target/release/airb \
+            --binary "artichoke/target/${{ matrix.target }}/release/artichoke" \
+            --binary "artichoke/target/${{ matrix.target }}/release/airb" \
             --resource artichoke/LICENSE \
             --resource artichoke/README.md \
             --resource THIRDPARTY.txt
