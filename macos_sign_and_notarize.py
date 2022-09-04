@@ -159,7 +159,7 @@ def codesigning_identity():
     Codesigning identity and name of the Apple Developer ID Application.
     """
 
-    return "Developer ID Application: Ryan Lopopolo (VDKP67932G)"
+    return "230CC499559E4A43CFCCD853B938C17E69C5ECB6"
 
 
 def notarization_apple_id():
