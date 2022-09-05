@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import shutil
 import subprocess
@@ -7,6 +8,9 @@ import sys
 import traceback
 from contextlib import contextmanager
 from pathlib import Path
+
+
+GPG_SIGN_VERSION = "0.1.0"
 
 
 def run_command_with_merged_output(command):
@@ -131,54 +135,46 @@ def validate(*, artifact_name, asc):
         )
 
 
-def main(args):
-    if not args:
-        print("Error: pass name of release as first argument", file=sys.stderr)
-        return 1
+def main():
+    parser = argparse.ArgumentParser(
+        description="Compute a GPG signature for an artifact"
+    )
+    parser.add_argument(
+        "-a",
+        "--artifact",
+        action="append",
+        required=True,
+        type=Path,
+        help="path to artifact to sign",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"%(prog)s {GPG_SIGN_VERSION}",
+    )
+    parser.add_argument("release", help="release name")
+    args = parser.parse_args()
 
-    release_name, *args = args
-    artifacts = []
-    append_next = None
-    for arg in args:
-        if append_next is None:
-            if arg == "--artifact":
-                append_next = artifacts
-                continue
-            print(f"Unexpected argument: {arg}", file=sys.stderr)
-            return 1
-        append_next.append(Path(arg))
-        append_next = None
-
-    if append_next is not None:
-        if append_next is artifacts:
-            print("Error: unterminated --artifact flag", file=sys.stderr)
-        return 1
-
-    if not artifacts:
-        print("Error: no artifacts passed to be signed", file=sys.stderr)
-        return 1
-
-    for artifact in artifacts:
-        if not artifact.is_file():
-            print(f"Error: artifact file {artifact} does not exist", file=sys.stderr)
-            return 1
-
-    if len(artifacts) > 1:
+    if len(args.artifact) > 1:
         print(
             (
-                "Error: Too many --artifact arguments. "
+                "Error: Too many artifacts provided. "
                 "GPG signing script can only sign one artifact at a time."
             ),
             file=sys.stderr,
         )
         return 1
 
-    artifact = artifacts[0]
+    artifact = args.artifact[0]
+    if not artifact.is_file():
+        print(f"Error: artifact file {artifact} does not exist", file=sys.stderr)
+        return 1
 
     try:
         emit_metadata()
 
-        signature = gpg_sign_artifact(artifact_path=artifact, release_name=release_name)
+        signature = gpg_sign_artifact(artifact_path=artifact, release_name=args.release)
         validate(artifact_name=artifact, asc=signature)
 
         set_output(name="signature", value=signature)
@@ -208,5 +204,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    sys.exit(main(args))
+    sys.exit(main())
