@@ -15,6 +15,28 @@ from contextlib import contextmanager
 from pathlib import Path
 
 
+def run_command_with_merged_output(command):
+    """
+    Run the given command as a subprocess and merge its stdout and stderr
+    streams.
+
+    This is useful for funnelling all output of a command into a GitHub Actions
+    log group.
+
+    This command uses `check=True` when delegating to `subprocess`.
+    """
+
+    proc = subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    for line in proc.stdout.splitlines():
+        print(line)
+
+
 def set_output(*, name, value):
     """
     Set an output for a GitHub Actions job.
@@ -55,15 +77,14 @@ def attach_disk_image(image, *, readwrite=False):
                 ]
             else:
                 command = ["/usr/bin/hdiutil", "attach", str(image)]
+            run_command_with_merged_output(command)
 
-            subprocess.run(command, check=True)
         mounted_image = disk_image_mount_path()
         yield mounted_image
     finally:
         with log_group("Detatching disk image"):
-            subprocess.run(
+            run_command_with_merged_output(
                 ["/usr/bin/hdiutil", "detach", str(mounted_image)],
-                check=True,
             )
 
 
@@ -218,51 +239,33 @@ def create_keychain(*, keychain_password):
 
     with log_group("Setup notarization keychain"):
         # security create-keychain -p "$keychain_password" "$keychain_path"
-        proc = subprocess.run(
+        run_command_with_merged_output(
             [
                 "security",
                 "create-keychain",
                 "-p",
                 keychain_password,
                 str(keychain_path()),
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+            ]
         )
-        for line in proc.stdout.splitlines():
-            print(line)
         print(f"Created keychain at {keychain_path()}")
 
         # security set-keychain-settings -lut 900 "$keychain_path"
-        proc = subprocess.run(
-            ["security", "set-keychain-settings", "-lut", "900", str(keychain_path())],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+        run_command_with_merged_output(
+            ["security", "set-keychain-settings", "-lut", "900", str(keychain_path())]
         )
-        for line in proc.stdout.splitlines():
-            print(line)
         print("Set keychain to be ephemeral")
 
         # security unlock-keychain -p "$keychain_password" "$keychain_path"
-        proc = subprocess.run(
+        run_command_with_merged_output(
             [
                 "security",
                 "unlock-keychain",
                 "-p",
                 keychain_password,
                 str(keychain_path()),
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+            ]
         )
-        for line in proc.stdout.splitlines():
-            print(line)
         print(f"Unlocked keychain at {keychain_path()}")
 
         # Per `man codesign`, the keychain filename passed via the `--keychain`
@@ -286,15 +289,9 @@ def create_keychain(*, keychain_password):
         )
         search_path = [line.strip().strip('"') for line in proc.stdout.splitlines()]
         search_path.append(str(keychain_path()))
-        proc = subprocess.run(
-            ["security", "list-keychains", "-d", "user", "-s"] + search_path,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+        run_command_with_merged_output(
+            ["security", "list-keychains", "-d", "user", "-s"] + search_path
         )
-        for line in proc.stdout.splitlines():
-            print(line)
         print(f"Set keychain search path: {', '.join(search_path)}")
 
 
@@ -341,7 +338,7 @@ def import_notarization_credentials():
         #   --password "$MACOS_NOTARIZE_APP_PASSWORD" \
         #   --team-id "VDKP67932G" \
         #   --keychain "$keychain_path"
-        proc = subprocess.run(
+        run_command_with_merged_output(
             [
                 "/usr/bin/xcrun",
                 "notarytool",
@@ -356,13 +353,7 @@ def import_notarization_credentials():
                 "--keychain",
                 str(keychain_path()),
             ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
         )
-        for line in proc.stdout.splitlines():
-            print(line)
 
 
 def import_certificate(*, path, name=None, password=None):
@@ -386,11 +377,7 @@ def import_certificate(*, path, name=None, password=None):
     if password is not None:
         command.extend(["-P", password])
 
-    proc = subprocess.run(
-        command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-    )
-    for line in proc.stdout.splitlines():
-        print(line)
+    run_command_with_merged_output(command)
 
     cert_name = path if name is None else name
     print(f"Imported certificate {cert_name}")
@@ -441,21 +428,9 @@ def import_codesigning_certificate():
         import_certificate(path="apple-certs/DeveloperIDG2CA.cer")
 
     with log_group("Show codesigning identities"):
-        proc = subprocess.run(
-            [
-                "security",
-                "find-identity",
-                "-p",
-                "codesigning",
-                str(keychain_path()),
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+        run_command_with_merged_output(
+            ["security", "find-identity", "-p", "codesigning", str(keychain_path())]
         )
-        for line in proc.stdout.splitlines():
-            print(line)
 
 
 def setup_codesigning_and_notarization_keychain(*, keychain_password):
@@ -475,7 +450,7 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password):
         # security set-key-partition-list \
         #   -S "apple-tool:,apple:,codesign:" \
         #   -s -k "$keychain_password" "$keychain_path"
-        proc = subprocess.run(
+        run_command_with_merged_output(
             [
                 "security",
                 "set-key-partition-list",
@@ -485,14 +460,8 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password):
                 "-k",
                 keychain_password,
                 str(keychain_path()),
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+            ]
         )
-        for line in proc.stdout.splitlines():
-            print(line)
 
 
 def codesign_binary(*, binary_path):
@@ -510,7 +479,7 @@ def codesign_binary(*, binary_path):
     #   --force \
     #   "$binary_path"
     with log_group(f"Run codesigning [{binary_path.name}]"):
-        proc = subprocess.run(
+        run_command_with_merged_output(
             [
                 "/usr/bin/codesign",
                 "--keychain",
@@ -526,14 +495,8 @@ def codesign_binary(*, binary_path):
                 "-vvv",
                 "--force",
                 str(binary_path),
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+            ]
         )
-        for line in proc.stdout.splitlines():
-            print(line)
 
 
 def create_notarization_bundle(*, release_name, binaries, resources):
@@ -578,7 +541,7 @@ def create_notarization_bundle(*, release_name, binaries, resources):
         #    -volname "Artichoke Ruby nightly" \
         #    -srcfolder "$release_name" \
         #    -ov -format UDRW name.dmg
-        subprocess.run(
+        run_command_with_merged_output(
             [
                 "/usr/bin/hdiutil",
                 "create",
@@ -592,8 +555,7 @@ def create_notarization_bundle(*, release_name, binaries, resources):
                 "UDRW",
                 "-verbose",
                 str(dmg_writable),
-            ],
-            check=True,
+            ]
         )
 
     with log_group("Set disk image icon"):
@@ -605,40 +567,28 @@ def create_notarization_bundle(*, release_name, binaries, resources):
                     "https://artichoke.github.io/logo/Artichoke-dmg.icns", str(icns)
                 )
                 shutil.copy(icns, dmg_icns_path)
-            subprocess.run(
-                [
-                    "/usr/bin/SetFile",
-                    "-c",
-                    "icnC",
-                    str(dmg_icns_path),
-                ],
-                check=True,
+            run_command_with_merged_output(
+                ["/usr/bin/SetFile", "-c", "icnC", str(dmg_icns_path)]
             )
+
             # Tell the volume that it has a special file attribute
-            subprocess.run(
-                [
-                    "/usr/bin/SetFile",
-                    "-a",
-                    "C",
-                    str(mounted_image),
-                ],
-                check=True,
+            run_command_with_merged_output(
+                ["/usr/bin/SetFile", "-a", "C", str(mounted_image)]
             )
 
     with log_group("Shrink disk image to fit"):
-        subprocess.run(
+        run_command_with_merged_output(
             [
                 "/usr/bin/hdiutil",
                 "resize",
                 "-size",
                 f"{get_image_size(dmg_writable)}m",
                 str(dmg_writable),
-            ],
-            check=True,
+            ]
         )
 
     with log_group("Compress disk image"):
-        subprocess.run(
+        run_command_with_merged_output(
             [
                 "/usr/bin/hdiutil",
                 "convert",
@@ -649,9 +599,9 @@ def create_notarization_bundle(*, release_name, binaries, resources):
                 "zlib-level=9",
                 "-o",
                 str(dmg),
-            ],
-            check=True,
+            ]
         )
+
         dmg_writable.unlink()
 
     codesign_binary(binary_path=dmg)
@@ -733,15 +683,8 @@ def staple_bundle(*, bundle):
     """
 
     with log_group("Staple disk image"):
-        subprocess.run(
-            [
-                "/usr/bin/xcrun",
-                "stapler",
-                "staple",
-                "-v",
-                str(bundle),
-            ],
-            check=True,
+        run_command_with_merged_output(
+            ["/usr/bin/xcrun", "stapler", "staple", "-v", str(bundle)]
         )
 
 
@@ -751,15 +694,8 @@ def validate(*, bundle, binary_names):
     """
 
     with log_group("Verify disk image staple"):
-        subprocess.run(
-            [
-                "/usr/bin/xcrun",
-                "stapler",
-                "validate",
-                "-v",
-                str(bundle),
-            ],
-            check=True,
+        run_command_with_merged_output(
+            ["/usr/bin/xcrun", "stapler", "validate", "-v", str(bundle)]
         )
 
     with log_group("Verify disk image signature"):
@@ -767,7 +703,7 @@ def validate(*, bundle, binary_names):
         #   --context context:primary-signature \
         #   2022-09-03-test-codesign-notarize-dmg-v1.dmg \
         #   -v
-        subprocess.run(
+        run_command_with_merged_output(
             [
                 "/usr/sbin/spctl",
                 "-a",
@@ -777,15 +713,14 @@ def validate(*, bundle, binary_names):
                 "context:primary-signature",
                 str(bundle),
                 "-v",
-            ],
-            check=True,
+            ]
         )
 
     with attach_disk_image(bundle) as mounted_image:
         for binary in binary_names:
             mounted_binary = mounted_image.joinpath(binary)
             with log_group(f"Verify signature: {binary}"):
-                subprocess.run(
+                run_command_with_merged_output(
                     [
                         "/usr/bin/codesign",
                         "--verify",
@@ -794,20 +729,18 @@ def validate(*, bundle, binary_names):
                         "--strict=all",
                         "-vvv",
                         str(mounted_binary),
-                    ],
-                    check=True,
+                    ]
                 )
 
             with log_group(f"Display signature: {binary}"):
-                subprocess.run(
+                run_command_with_merged_output(
                     [
                         "/usr/bin/codesign",
                         "--display",
                         "--check-notarization",
                         "-vvv",
                         str(mounted_binary),
-                    ],
-                    check=True,
+                    ]
                 )
 
 
