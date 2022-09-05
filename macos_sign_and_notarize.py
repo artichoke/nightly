@@ -119,7 +119,7 @@ def get_image_size(image):
             capture_output=True,
             text=True,
         )
-        size = int(proc.stdout.split(" ")[0])
+        size = int(proc.stdout.split()[0])
 
     return (size * 512 / 1000 / 1000) + 1
 
