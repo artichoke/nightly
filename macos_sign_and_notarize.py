@@ -265,6 +265,38 @@ def create_keychain(*, keychain_password):
             print(line)
         print(f"Unlocked keychain at {keychain_path()}")
 
+        # Per `man codesign`, the keychain filename passed via the `--keychain`
+        # argument will not be searched to resolve the signing identity's
+        # certificate chain unless it is also on the user's keychain search list.
+        #
+        # `security create-keychain` does not add keychains to the search path.
+        # _Opening_ them does, as well as explicitly manipulating the search path
+        # with `security list-keychains -s`.
+        #
+        # This stackoverflow post explains the solution:
+        # <https://stackoverflow.com/a/49640952>
+        #
+        # `security delete-keychain` removes the keychain from the search path.
+        proc = subprocess.run(
+            ["security", "list-keychains", "-d", "user"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        search_path = [line.strip().strip('"') for line in proc.stdout.splitlines()]
+        search_path.append(str(keychain_path()))
+        proc = subprocess.run(
+            ["security", "list-keychains", "-d", "user", "-s"] + search_path,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in proc.stdout.splitlines():
+            print(line)
+        print(f"Set keychain search path: {', '.join(search_path)}")
+
 
 def delete_keychain():
     """
@@ -333,6 +365,37 @@ def import_notarization_credentials():
             print(line)
 
 
+def import_certificate(*, path, name=None, password=None):
+    """
+    Import a certificate at a given path into the build keychain.
+    """
+
+    # security import certificate.p12 \
+    #   -k "$keychain_path" \
+    #   -P "$MACOS_CERTIFICATE_PWD" \
+    #   -T /usr/bin/codesign
+    command = [
+        "security",
+        "import",
+        str(path),
+        "-k",
+        str(keychain_path()),
+        "-T",
+        "/usr/bin/codesign",
+    ]
+    if password is not None:
+        command.extend(["-P", password])
+
+    proc = subprocess.run(
+        command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+    )
+    for line in proc.stdout.splitlines():
+        print(line)
+
+    cert_name = path if name is None else name
+    print(f"Imported certificate {cert_name}")
+
+
 def import_codesigning_certificate():
     """
     Import codesigning certificate into the codesigning and notarization process
@@ -365,67 +428,17 @@ def import_codesigning_certificate():
         with tempfile.TemporaryDirectory() as tempdirname:
             cert = Path(tempdirname).joinpath("certificate.p12")
             cert.write_bytes(certificate)
-            # security import certificate.p12 \
-            #   -k "$keychain_path" \
-            #   -P "$MACOS_CERTIFICATE_PWD" \
-            #   -T /usr/bin/codesign
-            proc = subprocess.run(
-                [
-                    "security",
-                    "import",
-                    str(cert),
-                    "-k",
-                    str(keychain_path()),
-                    "-P",
-                    certificate_password,
-                    "-T",
-                    "/usr/bin/codesign",
-                ],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
+            import_certificate(
+                path=cert, name="Developer Application", password=certificate_password
             )
-            for line in proc.stdout.splitlines():
-                print(line)
-
-    with log_group("Import intermediate certificates"):
-        proc = subprocess.run(
-            [
-                "security",
-                "import",
-                "apple-certs/DeveloperIDG2CA.cer",
-                "-k",
-                str(keychain_path()),
-                "-T",
-                "/usr/bin/codesign",
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-        for line in proc.stdout.splitlines():
-            print(line)
 
     with log_group("Import provisioning profile"):
-        proc = subprocess.run(
-            [
-                "security",
-                "import",
-                "apple-certs/artichoke-provisioning-profile-signing.cer",
-                "-k",
-                str(keychain_path()),
-                "-T",
-                "/usr/bin/codesign",
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+        import_certificate(
+            path="apple-certs/artichoke-provisioning-profile-signing.cer"
         )
-        for line in proc.stdout.splitlines():
-            print(line)
+
+    with log_group("Import certificate chain"):
+        import_certificate(path="apple-certs/DeveloperIDG2CA.cer")
 
     with log_group("Show codesigning identities"):
         proc = subprocess.run(

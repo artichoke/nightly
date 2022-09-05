@@ -15,8 +15,6 @@ The Developer ID Application certificate used for codesigning has "Developer
 ID - G2 (Expiring 09/17/2031 00:00:00 UTC)" as an intermediate in its
 certificate chain.
 
-The root certificate in the chain is
-
 ## Provisioning Profile
 
 `artichoke-provisioning-profile-signing.cer` contains a provisioning profile
