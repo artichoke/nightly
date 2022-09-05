@@ -6,11 +6,11 @@ import shutil
 import subprocess
 import sys
 import traceback
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
-GPG_SIGN_VERSION = "0.2.0"
+GPG_SIGN_VERSION = "0.2.1"
 
 
 def run_command_with_merged_output(command: list[str]) -> None:
