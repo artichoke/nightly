@@ -92,6 +92,7 @@ def gpg_sign_artifact(*, artifact_path, release_name):
                 str(asc),
                 str(artifact_path),
             ],
+            check=True,
             # capture output because `gpg --detatch-sign` writes to stderr which
             # prevents the GitHub Actions log group from working correctly.
             stdout=subprocess.PIPE,
@@ -120,6 +121,7 @@ def validate(*, artifact_name, asc):
                 str(asc),
                 str(artifact_name),
             ],
+            check=True,
             # capture output because `gpg --verify` writes to stderr which
             # prevents the GitHub Actions log group from working correctly.
             stdout=subprocess.PIPE,
@@ -160,7 +162,7 @@ def main(args):
 
     for artifact in artifacts:
         if not artifact.is_file():
-            print("Error: {artifact} does not exist", file=sys.stderr)
+            print(f"Error: artifact file {artifact} does not exist", file=sys.stderr)
             return 1
 
     if len(artifacts) > 1:
@@ -185,16 +187,25 @@ def main(args):
 
         return 0
     except subprocess.CalledProcessError as e:
-        print(
-            f"""Error: failed to invoke command.
-            \tCommand: {e.cmd}
-            \tReturn Code: {e.returncode}""",
-            file=sys.stderr,
-        )
+        print("Error: failed to invoke command", file=sys.stderr)
+        print(f"    Command: {e.cmd}", file=sys.stderr)
+        print(f"    Return Code: {e.returncode}", file=sys.stderr)
+        if e.stdout:
+            print()
+            print("Output:", file=sys.stderr)
+            for line in e.stdout.splitlines():
+                print(f"    {line}", file=sys.stderr)
+        if e.stderr:
+            print()
+            print("Error Output:", file=sys.stderr)
+            for line in e.stderr.splitlines():
+                print(f"    {line}", file=sys.stderr)
+        print()
+        print(traceback.format_exc(), file=sys.stderr)
         return e.returncode
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        print(traceback.format_exc())
+        print(traceback.format_exc(), file=sys.stderr)
         return 1
 
 

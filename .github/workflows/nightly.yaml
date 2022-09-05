@@ -150,7 +150,7 @@ jobs:
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
-          output_file: ${{ github.workspace }}/THIRDPARTY
+          output_file: ${{ github.workspace }}/THIRDPARTY.txt
 
       - name: Clone Artichoke
         uses: actions/checkout@v3
@@ -208,14 +208,65 @@ jobs:
         working-directory: artichoke
         run: cargo build --verbose --release --target ${{ matrix.target }}
 
+      # This will codesign binaries in place which means that the tarballed
+      # binaries will be codesigned as well.
+      - name: Run Apple Codesigning and Notarization
+        id: apple_codesigning
+        if: runner.os == 'macOS'
+        run: |
+          python3 macos_sign_and_notarize.py "artichoke-nightly-${{ matrix.target }}" \
+            --binary "artichoke/target/${{ matrix.target }}/release/artichoke" \
+            --binary "artichoke/target/${{ matrix.target }}/release/airb" \
+            --resource artichoke/LICENSE \
+            --resource artichoke/README.md \
+            --resource THIRDPARTY.txt
+        env:
+          MACOS_NOTARIZE_APP_PASSWORD: ${{ secrets.MACOS_NOTARIZE_APP_PASSWORD }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSPHRASE: ${{ secrets.MACOS_CERTIFICATE_PASSPHRASE }}
+
+      - name: GPG sign Apple DMG
+        id: apple_codesigning_gpg
+        if: runner.os == 'macOS'
+        run: |
+          python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" \
+            --artifact "${{ steps.apple_codesigning.outputs.asset }}"
+
+      - name: Upload release archive
+        uses: ncipollo/release-action@v1
+        if: runner.os == 'macOS'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_info.outputs.version }}
+          draft: true
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          artifacts: ${{ steps.apple_codesigning.outputs.asset }}
+          artifactContentType: ${{ steps.apple_codesigning.outputs.content_type }}
+
+      - name: Upload release signature
+        uses: ncipollo/release-action@v1
+        if: runner.os == 'macOS'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_info.outputs.version }}
+          draft: true
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          artifacts: ${{ steps.apple_codesigning_gpg.outputs.signature }}
+          artifactContentType: "text/plain"
+
       - name: Build archive
         shell: bash
         id: build
         run: |
           staging="artichoke-nightly-${{ matrix.target }}"
           mkdir -p "$staging"/
-          cp artichoke/{README.md,LICENSE} "$staging/"
-          cp THIRDPARTY "$staging/THIRDPARTY.txt"
+          cp artichoke/{README.md,LICENSE} THIRDPARTY.txt "$staging/"
           if [ "${{ runner.os }}" = "Windows" ]; then
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
