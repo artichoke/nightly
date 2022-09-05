@@ -36,6 +36,9 @@ jobs:
       - name: Run flake8
         run: venv/bin/flake8 .
 
+      - name: Run flake8
+        run: venv/bin/mypy .
+
   ruby:
     name: Lint and format Ruby
     runs-on: ubuntu-latest

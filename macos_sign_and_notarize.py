@@ -14,11 +14,12 @@ import traceback
 import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator, Optional
 
-MACOS_SIGN_AND_NOTARIZE_VERSION = "0.2.0"
+MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.0"
 
 
-def run_command_with_merged_output(command):
+def run_command_with_merged_output(command: list[str]) -> None:
     """
     Run the given command as a subprocess and merge its stdout and stderr
     streams.
@@ -41,7 +42,7 @@ def run_command_with_merged_output(command):
             print(line)
 
 
-def set_output(*, name, value):
+def set_output(*, name: str, value: str) -> None:
     """
     Set an output for a GitHub Actions job.
 
@@ -52,7 +53,7 @@ def set_output(*, name, value):
 
 
 @contextmanager
-def log_group(group):
+def log_group(group: str) -> Iterator[None]:
     """
     Create an expandable log group in GitHub Actions job logs.
 
@@ -67,7 +68,7 @@ def log_group(group):
 
 
 @contextmanager
-def attach_disk_image(image, *, readwrite=False):
+def attach_disk_image(image: Path, *, readwrite: bool = False) -> Iterator[Path]:
     try:
         with log_group("Attaching disk image"):
             if readwrite:
@@ -92,7 +93,7 @@ def attach_disk_image(image, *, readwrite=False):
             )
 
 
-def get_image_size(image):
+def get_image_size(image: Path) -> int:
     """
     Compute the size in megabytes of a disk image.
 
@@ -125,10 +126,10 @@ def get_image_size(image):
         )
         size = int(proc.stdout.split()[0])
 
-    return (size * 512 / 1000 / 1000) + 1
+    return (size * 512 // 1000 // 1000) + 1
 
 
-def emit_metadata():
+def emit_metadata() -> None:
     if os.getenv("CI") != "true":
         return
     with log_group("Workflow metadata"):
@@ -150,7 +151,7 @@ def emit_metadata():
             print(f"GitHub SHA: {sha}")
 
 
-def keychain_path():
+def keychain_path() -> Path:
     """
     Absolute path to a keychain used for the codesigning and notarization
     process.
@@ -168,7 +169,7 @@ def keychain_path():
         return Path("notarization.keychain-db").resolve()
 
 
-def notarytool_credentials_profile():
+def notarytool_credentials_profile() -> str:
     """
     Name of the credentials profile stored in the build keychain for use with
     notarytool.
@@ -179,7 +180,7 @@ def notarytool_credentials_profile():
     return "artichoke-apple-codesign-notarize"
 
 
-def codesigning_identity():
+def codesigning_identity() -> str:
     """
     Codesigning identity and name of the Apple Developer ID Application.
     """
@@ -187,7 +188,7 @@ def codesigning_identity():
     return "Developer ID Application: Ryan Lopopolo (VDKP67932G)"
 
 
-def notarization_apple_id():
+def notarization_apple_id() -> str:
     """
     Apple ID belonging to the codesigning identity.
     """
@@ -195,7 +196,7 @@ def notarization_apple_id():
     return "apple-codesign@artichokeruby.org"
 
 
-def notarization_app_specific_password():
+def notarization_app_specific_password() -> str:
     """
     App-specific password for the notarization process belonging to the
     codesigning identity's Apple ID.
@@ -206,7 +207,7 @@ def notarization_app_specific_password():
     raise Exception("MACOS_NOTARIZE_APP_PASSWORD environment variable is required")
 
 
-def notarization_team_id():
+def notarization_team_id() -> str:
     """
     Team ID belonging to the codesigning identity.
     """
@@ -214,7 +215,7 @@ def notarization_team_id():
     return "VDKP67932G"
 
 
-def disk_image_volume_name():
+def disk_image_volume_name() -> str:
     """
     Volume name for the newly created DMG disk image.
     """
@@ -222,7 +223,7 @@ def disk_image_volume_name():
     return "Artichoke Ruby nightly"
 
 
-def disk_image_mount_path():
+def disk_image_mount_path() -> Path:
     """
     Mount path for the newly created DMG disk image.
     """
@@ -230,7 +231,7 @@ def disk_image_mount_path():
     return Path("/Volumes").joinpath(disk_image_volume_name())
 
 
-def create_keychain(*, keychain_password):
+def create_keychain(*, keychain_password: str) -> None:
     """
     Create a new keychain for the codesigning and notarization process.
 
@@ -302,7 +303,7 @@ def create_keychain(*, keychain_password):
         print(f"Set keychain search path: {', '.join(search_path)}")
 
 
-def delete_keychain():
+def delete_keychain() -> None:
     """
     Delete the keychain for the codesigning and notarization process.
     Create a new keychain for the codesigning and notarization process.
@@ -329,7 +330,7 @@ def delete_keychain():
             print(f"Keychain not found at {keychain_path()}, ignoring ...")
 
 
-def import_notarization_credentials():
+def import_notarization_credentials() -> None:
     """
     Import credentials required for notarytool to the codesigning and notarization
     process keychain.
@@ -363,7 +364,9 @@ def import_notarization_credentials():
         )
 
 
-def import_certificate(*, path, name=None, password=None):
+def import_certificate(
+    *, path: Path, name: Optional[str] = None, password: Optional[str] = None
+) -> None:
     """
     Import a certificate at a given path into the build keychain.
     """
@@ -390,7 +393,7 @@ def import_certificate(*, path, name=None, password=None):
     print(f"Imported certificate {cert_name}")
 
 
-def import_codesigning_certificate():
+def import_codesigning_certificate() -> None:
     """
     Import codesigning certificate into the codesigning and notarization process
     keychain.
@@ -426,13 +429,14 @@ def import_codesigning_certificate():
                 path=cert, name="Developer Application", password=certificate_password
             )
 
+    apple_certs = Path("apple-certs").resolve()
     with log_group("Import provisioning profile"):
         import_certificate(
-            path="apple-certs/artichoke-provisioning-profile-signing.cer"
+            path=apple_certs.joinpath("artichoke-provisioning-profile-signing.cer")
         )
 
     with log_group("Import certificate chain"):
-        import_certificate(path="apple-certs/DeveloperIDG2CA.cer")
+        import_certificate(path=apple_certs.joinpath("DeveloperIDG2CA.cer"))
 
     with log_group("Show codesigning identities"):
         run_command_with_merged_output(
@@ -440,7 +444,7 @@ def import_codesigning_certificate():
         )
 
 
-def setup_codesigning_and_notarization_keychain(*, keychain_password):
+def setup_codesigning_and_notarization_keychain(*, keychain_password: str) -> None:
     """
     Create and prepare a keychain for the codesigning and notarization process.
 
@@ -471,7 +475,7 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password):
         )
 
 
-def codesign_binary(*, binary_path):
+def codesign_binary(*, binary_path: Path) -> None:
     """
     Run the codesigning process on the given binary.
     """
@@ -506,7 +510,7 @@ def codesign_binary(*, binary_path):
         )
 
 
-def setup_dmg_icon(*, dest, url):
+def setup_dmg_icon(*, dest: Path, url: str) -> None:
     """
     Fetch a .icns file from the given URL and set it as the volume icon for
     the DMG mounted at the given destination.
@@ -531,7 +535,13 @@ def setup_dmg_icon(*, dest, url):
         print("DMG icns file set!")
 
 
-def create_notarization_bundle(*, release_name, binaries, resources, dmg_icon_url):
+def create_notarization_bundle(
+    *,
+    release_name: str,
+    binaries: list[Path],
+    resources: list[Path],
+    dmg_icon_url: Optional[str],
+) -> Path:
     """
     Create a disk image with the codesigned binaries to submit to the Apple
     notarization service and prepare for distribution.
@@ -626,7 +636,7 @@ def create_notarization_bundle(*, release_name, binaries, resources, dmg_icon_ur
     return dmg
 
 
-def notarize_bundle(*, bundle):
+def notarize_bundle(*, bundle: Path) -> None:
     """
     Submit the bundle to Apple for notarization using notarytool.
 
@@ -695,7 +705,7 @@ def notarize_bundle(*, bundle):
                 print(json.dumps(log_json, indent=4))
 
 
-def staple_bundle(*, bundle):
+def staple_bundle(*, bundle: Path) -> None:
     """
     Staple the diskimage with `stapler`.
     """
@@ -706,7 +716,7 @@ def staple_bundle(*, bundle):
         )
 
 
-def validate(*, bundle, binary_names):
+def validate(*, bundle: Path, binary_names: list[str]) -> None:
     """
     Verify the stapled disk image and codesigning of binaries within it.
     """
@@ -762,7 +772,7 @@ def validate(*, bundle, binary_names):
                 )
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Create Apple code signatures and notarized archives"
     )
@@ -841,7 +851,7 @@ def main():
         staple_bundle(bundle=bundle)
 
         validate(bundle=bundle, binary_names=[binary.name for binary in args.binaries])
-        set_output(name="asset", value=bundle)
+        set_output(name="asset", value=str(bundle))
         set_output(name="content_type", value="application/x-apple-diskimage")
 
         return 0

@@ -8,11 +8,12 @@ import sys
 import traceback
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
-GPG_SIGN_VERSION = "0.1.0"
+GPG_SIGN_VERSION = "0.2.0"
 
 
-def run_command_with_merged_output(command):
+def run_command_with_merged_output(command: list[str]) -> None:
     """
     Run the given command as a subprocess and merge its stdout and stderr
     streams.
@@ -35,7 +36,7 @@ def run_command_with_merged_output(command):
             print(line)
 
 
-def set_output(*, name, value):
+def set_output(*, name: str, value: str) -> None:
     """
     Set an output for a GitHub Actions job.
 
@@ -46,7 +47,7 @@ def set_output(*, name, value):
 
 
 @contextmanager
-def log_group(group):
+def log_group(group: str) -> Iterator[None]:
     """
     Create an expandable log group in GitHub Actions job logs.
 
@@ -60,7 +61,7 @@ def log_group(group):
         print("::endgroup::")
 
 
-def emit_metadata():
+def emit_metadata() -> None:
     if os.getenv("CI") != "true":
         return
     with log_group("Workflow metadata"):
@@ -82,7 +83,7 @@ def emit_metadata():
             print(f"GitHub SHA: {sha}")
 
 
-def signing_identity():
+def signing_identity() -> str:
     """
     Signing identity and GPG key fingerprint.
     """
@@ -90,20 +91,20 @@ def signing_identity():
     return "1C4A856ACF86EC1EE841180FAF57A37CAC061452"
 
 
-def gpg_sign_artifact(*, artifact_path, release_name):
+def gpg_sign_artifact(*, artifact: Path, release_name: str) -> Path:
     """
     Create a GPG signature for the given artifact.
     """
 
     stage = Path("dist").joinpath(release_name)
-    with log_group(f"Create GPG signature [{artifact_path.name}]"):
+    with log_group(f"Create GPG signature [{artifact.name}]"):
         try:
             shutil.rmtree(stage)
         except FileNotFoundError:
             pass
         os.makedirs(stage, exist_ok=True)
 
-        asc = stage.joinpath(f"{artifact_path.name}.asc")
+        asc = stage.joinpath(f"{artifact.name}.asc")
         run_command_with_merged_output(
             [
                 "gpg",
@@ -116,25 +117,25 @@ def gpg_sign_artifact(*, artifact_path, release_name):
                 signing_identity(),
                 "--output",
                 str(asc),
-                str(artifact_path),
+                str(artifact),
             ]
         )
 
         return asc
 
 
-def validate(*, artifact_name, asc):
+def validate(*, artifact: Path, asc: Path) -> None:
     """
     Verify GPG signature for the given artifact.
     """
 
     with log_group("Verify GPG signature"):
         run_command_with_merged_output(
-            ["gpg", "--batch", "--verify", "-vv", str(asc), str(artifact_name)]
+            ["gpg", "--batch", "--verify", "-vv", str(asc), str(artifact)]
         )
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Compute a GPG signature for an artifact"
     )
@@ -173,10 +174,10 @@ def main():
     try:
         emit_metadata()
 
-        signature = gpg_sign_artifact(artifact_path=artifact, release_name=args.release)
-        validate(artifact_name=artifact, asc=signature)
+        signature = gpg_sign_artifact(artifact=artifact, release_name=args.release)
+        validate(artifact=artifact, asc=signature)
 
-        set_output(name="signature", value=signature)
+        set_output(name="signature", value=str(signature))
 
         return 0
     except subprocess.CalledProcessError as e:
