@@ -82,7 +82,7 @@ def attach_disk_image(image, *, readwrite=False):
         mounted_image = disk_image_mount_path()
         yield mounted_image
     finally:
-        with log_group("Detatching disk image"):
+        with log_group("Detaching disk image"):
             run_command_with_merged_output(
                 ["/usr/bin/hdiutil", "detach", str(mounted_image)],
             )
@@ -558,23 +558,27 @@ def create_notarization_bundle(*, release_name, binaries, resources):
             ]
         )
 
-    with log_group("Set disk image icon"):
-        with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
+    with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
+        with log_group("Set disk image icon"):
             dmg_icns_path = mounted_image.joinpath(".VolumeIcon.icns")
             with tempfile.TemporaryDirectory() as tempdirname:
+                icns_url = "https://artichoke.github.io/logo/Artichoke-dmg.icns"
                 icns = Path(tempdirname).joinpath(".VolumeIcon.icns")
-                urllib.request.urlretrieve(
-                    "https://artichoke.github.io/logo/Artichoke-dmg.icns", str(icns)
-                )
+
+                print(f"Fetching DMG icns file at {icns_url}")
+                urllib.request.urlretrieve(icns_url, str(icns))
+
+                print("Copying downloaded icns file to DMG archive")
                 shutil.copy(icns, dmg_icns_path)
+
             run_command_with_merged_output(
                 ["/usr/bin/SetFile", "-c", "icnC", str(dmg_icns_path)]
             )
-
             # Tell the volume that it has a special file attribute
             run_command_with_merged_output(
                 ["/usr/bin/SetFile", "-a", "C", str(mounted_image)]
             )
+            print("DMG icns file set!")
 
     with log_group("Shrink disk image to fit"):
         run_command_with_merged_output(

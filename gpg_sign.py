@@ -28,7 +28,8 @@ def run_command_with_merged_output(command):
         text=True,
     )
     for line in proc.stdout.splitlines():
-        print(line)
+        if line:
+            print(line)
 
 
 def set_output(*, name, value):
