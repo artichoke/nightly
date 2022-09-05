@@ -9,6 +9,28 @@ from contextlib import contextmanager
 from pathlib import Path
 
 
+def run_command_with_merged_output(command):
+    """
+    Run the given command as a subprocess and merge its stdout and stderr
+    streams.
+
+    This is useful for funnelling all output of a command into a GitHub Actions
+    log group.
+
+    This command uses `check=True` when delegating to `subprocess`.
+    """
+
+    proc = subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    for line in proc.stdout.splitlines():
+        print(line)
+
+
 def set_output(*, name, value):
     """
     Set an output for a GitHub Actions job.
@@ -78,7 +100,7 @@ def gpg_sign_artifact(*, artifact_path, release_name):
         os.makedirs(stage, exist_ok=True)
 
         asc = stage.joinpath(f"{artifact_path.name}.asc")
-        proc = subprocess.run(
+        run_command_with_merged_output(
             [
                 "gpg",
                 "--batch",
@@ -91,17 +113,8 @@ def gpg_sign_artifact(*, artifact_path, release_name):
                 "--output",
                 str(asc),
                 str(artifact_path),
-            ],
-            check=True,
-            # capture output because `gpg --detatch-sign` writes to stderr which
-            # prevents the GitHub Actions log group from working correctly.
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+            ]
         )
-
-        for line in proc.stdout.splitlines():
-            print(line)
 
         return asc
 
@@ -112,25 +125,9 @@ def validate(*, artifact_name, asc):
     """
 
     with log_group("Verify GPG signature"):
-        proc = subprocess.run(
-            [
-                "gpg",
-                "--batch",
-                "--verify",
-                "-vv",
-                str(asc),
-                str(artifact_name),
-            ],
-            check=True,
-            # capture output because `gpg --verify` writes to stderr which
-            # prevents the GitHub Actions log group from working correctly.
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+        run_command_with_merged_output(
+            ["gpg", "--batch", "--verify", "-vv", str(asc), str(artifact_name)]
         )
-
-        for line in proc.stdout.splitlines():
-            print(line)
 
 
 def main(args):
