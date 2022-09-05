@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import base64
 import binascii
 import json
@@ -13,6 +14,8 @@ import traceback
 import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
+
+MACOS_SIGN_AND_NOTARIZE_VERSION = "0.2.0"
 
 
 def run_command_with_merged_output(command):
@@ -500,7 +503,32 @@ def codesign_binary(*, binary_path):
         )
 
 
-def create_notarization_bundle(*, release_name, binaries, resources):
+def setup_dmg_icon(*, dest, url):
+    """
+    Fetch a .icns file from the given URL and set it as the volume icon for
+    the DMG mounted at the given destination.
+    """
+
+    with log_group("Set disk image icon"):
+        dmg_icns_path = dest.joinpath(".VolumeIcon.icns")
+        with tempfile.TemporaryDirectory() as tempdirname:
+            icns = Path(tempdirname).joinpath(".VolumeIcon.icns")
+
+            print(f"Fetching DMG icns file at {url}")
+            urllib.request.urlretrieve(url, str(icns))
+
+            print("Copying downloaded icns file to DMG archive")
+            shutil.copy(icns, dmg_icns_path)
+
+        run_command_with_merged_output(
+            ["/usr/bin/SetFile", "-c", "icnC", str(dmg_icns_path)]
+        )
+        # Tell the volume that it has a special file attribute
+        run_command_with_merged_output(["/usr/bin/SetFile", "-a", "C", str(dest)])
+        print("DMG icns file set!")
+
+
+def create_notarization_bundle(*, release_name, binaries, resources, dmg_icon_url):
     """
     Create a disk image with the codesigned binaries to submit to the Apple
     notarization service and prepare for distribution.
@@ -559,27 +587,9 @@ def create_notarization_bundle(*, release_name, binaries, resources):
             ]
         )
 
-    with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
-        with log_group("Set disk image icon"):
-            dmg_icns_path = mounted_image.joinpath(".VolumeIcon.icns")
-            with tempfile.TemporaryDirectory() as tempdirname:
-                icns_url = "https://artichoke.github.io/logo/Artichoke-dmg.icns"
-                icns = Path(tempdirname).joinpath(".VolumeIcon.icns")
-
-                print(f"Fetching DMG icns file at {icns_url}")
-                urllib.request.urlretrieve(icns_url, str(icns))
-
-                print("Copying downloaded icns file to DMG archive")
-                shutil.copy(icns, dmg_icns_path)
-
-            run_command_with_merged_output(
-                ["/usr/bin/SetFile", "-c", "icnC", str(dmg_icns_path)]
-            )
-            # Tell the volume that it has a special file attribute
-            run_command_with_merged_output(
-                ["/usr/bin/SetFile", "-a", "C", str(mounted_image)]
-            )
-            print("DMG icns file set!")
+    if dmg_icon_url:
+        with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
+            setup_dmg_icon(dest=mounted_image, url=dmg_icon_url)
 
     with log_group("Shrink disk image to fit"):
         run_command_with_merged_output(
@@ -749,47 +759,65 @@ def validate(*, bundle, binary_names):
                 )
 
 
-def main(args):
-    if not args:
-        print("Error: pass name of release as first argument", file=sys.stderr)
-        return 1
+def main():
+    parser = argparse.ArgumentParser(
+        description="Create Apple code signatures and notarized archives"
+    )
+    parser.add_argument(
+        "-b",
+        "--binary",
+        action="append",
+        dest="binaries",
+        required=True,
+        type=Path,
+        help="path to binary to codesign",
+    )
+    parser.add_argument(
+        "-r",
+        "--resource",
+        action="append",
+        dest="resources",
+        required=True,
+        type=Path,
+        help="path to resource to include in archive",
+    )
+    parser.add_argument(
+        "--dmg-icon-url",
+        action="append",
+        required=False,
+        type=str,
+        help="url to a .icns file to use as the DMG volume icon",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"%(prog)s {MACOS_SIGN_AND_NOTARIZE_VERSION}",
+    )
+    parser.add_argument("release", help="release name")
+    args = parser.parse_args()
 
-    release_name, *args = args
-    binaries = []
-    resources = []
-    append_next = None
-    for arg in args:
-        if append_next is None:
-            if arg == "--binary":
-                append_next = binaries
-                continue
-            if arg == "--resource":
-                append_next = resources
-                continue
-            print(f"Unexpected argument: {arg}", file=sys.stderr)
-            return 1
-        append_next.append(Path(arg))
-        append_next = None
-
-    if append_next is not None:
-        if append_next is binaries:
-            print("Error: unterminated --binary flag", file=sys.stderr)
-        if append_next is resources:
-            print("Error: unterminated --resource flag", file=sys.stderr)
-        return 1
-
-    if not binaries:
-        print("Error: no binaries passed to be codesigned", file=sys.stderr)
-        return 1
-
-    for binary in binaries:
+    for binary in args.binaries:
         if not binary.is_file():
             print(f"Error: binary file {binary} does not exist", file=sys.stderr)
             return 1
-    for resource in resources:
+    for resource in args.resources:
         if not resource.is_file():
             print(f"Error: resource file {resource} does not exist", file=sys.stderr)
             return 1
+
+    dmg_icon_url = None
+    if args.dmg_icon_url:
+        if len(args.dmg_icon_url) > 1:
+            print(
+                (
+                    "Error: Too many DMG icon URLs provided. "
+                    "At most one DMG icon URL may be provided."
+                ),
+                file=sys.stderr,
+            )
+            return 1
+        dmg_icon_url = args.dmg_icon_url[0]
 
     try:
         emit_metadata()
@@ -797,18 +825,19 @@ def main(args):
         keychain_password = secrets.token_urlsafe()
         setup_codesigning_and_notarization_keychain(keychain_password=keychain_password)
 
-        for binary in binaries:
+        for binary in args.binaries:
             codesign_binary(binary_path=binary)
 
         bundle = create_notarization_bundle(
-            release_name=release_name,
-            binaries=binaries,
-            resources=resources,
+            release_name=args.release,
+            binaries=args.binaries,
+            resources=args.resources,
+            dmg_icon_url=dmg_icon_url,
         )
         notarize_bundle(bundle=bundle)
         staple_bundle(bundle=bundle)
 
-        validate(bundle=bundle, binary_names=[binary.name for binary in binaries])
+        validate(bundle=bundle, binary_names=[binary.name for binary in args.binaries])
         set_output(name="asset", value=bundle)
         set_output(name="content_type", value="application/x-apple-diskimage")
 
@@ -840,5 +869,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    sys.exit(main(args))
+    sys.exit(main())
