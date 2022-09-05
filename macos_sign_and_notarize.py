@@ -291,8 +291,11 @@ def create_keychain(*, keychain_password):
             stderr=subprocess.STDOUT,
             text=True,
         )
+
         search_path = [line.strip().strip('"') for line in proc.stdout.splitlines()]
+        search_path = [keychain for keychain in search_path if keychain]
         search_path.append(str(keychain_path()))
+
         run_command_with_merged_output(
             ["security", "list-keychains", "-d", "user", "-s"] + search_path
         )
