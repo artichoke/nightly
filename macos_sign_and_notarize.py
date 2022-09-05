@@ -15,7 +15,6 @@ import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
-
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.2.0"
 
 

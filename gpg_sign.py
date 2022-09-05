@@ -9,7 +9,6 @@ import traceback
 from contextlib import contextmanager
 from pathlib import Path
 
-
 GPG_SIGN_VERSION = "0.1.0"
 
 
