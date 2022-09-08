@@ -307,7 +307,6 @@ def create_keychain(*, keychain_password: str) -> None:
 def delete_keychain() -> None:
     """
     Delete the keychain for the codesigning and notarization process.
-    Create a new keychain for the codesigning and notarization process.
 
     This ephemeral keychain stores Apple ID credentials for `notarytool` and
     code signing certificates for `codesign`.
