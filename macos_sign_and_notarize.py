@@ -400,7 +400,7 @@ def import_codesigning_certificate() -> None:
 
     The certificate is expected to be a base64-encoded string stored in the
     `MACOS_CERTIFICATE` environment variable with a password given by the
-    `MACOS_CERTIFICATE_PWD` environment variable.
+    `MACOS_CERTIFICATE_PASSPHRASE` environment variable.
 
     The base64-encoded certificate is stored in a temporary file so it may be
     imported into the keychain by the `security` utility.
