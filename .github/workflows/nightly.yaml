@@ -151,6 +151,7 @@ jobs:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
           output_file: ${{ github.workspace }}/THIRDPARTY.txt
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone Artichoke
         uses: actions/checkout@v3
