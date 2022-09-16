@@ -108,7 +108,7 @@ def get_image_size(image: Path) -> int:
         capture_output=True,
         text=True,
     )
-    major, _minor, _patch = proc.stdout.strip().split(".")
+    major, *_rest = proc.stdout.strip().split(".", 1)
 
     if int(major) >= 12:
         proc = subprocess.run(
