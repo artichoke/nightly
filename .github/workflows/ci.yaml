@@ -60,6 +60,54 @@ jobs:
       - name: Verify GPG signature
         run: gpg --batch --verify "${{ steps.gpg_signing.outputs.signature }}" artichoke/target/release/artichoke
 
+  apple-codesign:
+    name: Apple Codesigning
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Clone Artichoke
+        uses: actions/checkout@v3
+        with:
+          repository: artichoke/artichoke
+          path: artichoke
+
+      - name: Build release artifacts
+        working-directory: artichoke
+        run: cargo build --verbose --release
+
+      # This will codesign binaries in place which means that the tarballed
+      # binaries will be codesigned as well.
+      - name: Run Apple Codesigning and Notarization
+        id: apple_codesigning
+        if: runner.os == 'macOS'
+        run: |
+          python3 macos_sign_and_notarize.py "nightly-apple-codesign-test" \
+            --binary "artichoke/target/release/artichoke" \
+            --binary "artichoke/target/release/airb" \
+            --resource artichoke/LICENSE \
+            --resource artichoke/README.md \
+            --resource THIRDPARTY.txt \
+            --dmg-icon-url "https://artichoke.github.io/logo/Artichoke-dmg.icns"
+        env:
+          MACOS_NOTARIZE_APP_PASSWORD: ${{ secrets.MACOS_NOTARIZE_APP_PASSWORD }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSPHRASE: ${{ secrets.MACOS_CERTIFICATE_PASSPHRASE }}
+
+      - name: Verify code signature
+        run: |
+          codesign --verify --check-notarization --deep --strict=all artichoke/target/release/artichoke
+          codesign --verify --check-notarization --deep --strict=all artichoke/target/release/airb
+
+      - name: Verify DMG code signature
+        run: spctl -a -t open --context context:primary-signature "${{ steps.apple_codesigning.outputs.asset }}" -v
+
   python:
     name: Lint and format Python
     runs-on: ubuntu-latest
