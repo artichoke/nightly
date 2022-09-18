@@ -10,6 +10,56 @@ name: CI
   schedule:
     - cron: "0 0 * * TUE"
 jobs:
+  gpg-sign:
+    name: GPG Signing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Clone Artichoke
+        uses: actions/checkout@v3
+        with:
+          repository: artichoke/artichoke
+          path: artichoke
+
+      # ```
+      # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
+      # pub   ed25519 2021-01-03 [SC]
+      #       C983 8F10 4021 F59E E6F6  BCBE B199 D034 7FDA 14A4
+      # uid           [ultimate] Code signing for Artichoke Ruby <codesign@artichokeruby.org>
+      # sub   cv25519 2021-01-03 [E]
+      #       7719 1B6D 83B2 F4E8 5197  125B A9A3 F70E 710A 15AA
+      # sub   ed25519 2021-01-03 [S]
+      #       1C4A 856A CF86 EC1E E841  180F AF57 A37C AC06 1452
+      # ```
+      - name: Import GPG key
+        id: import_gpg
+        uses: artichoke/ghaction-import-gpg@v5.1.0
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
+          fingerprint: 1C4A856ACF86EC1EE841180FAF57A37CAC061452
+
+      - name: List keys
+        run: gpg -K
+
+      - name: Build release artifacts
+        working-directory: artichoke
+        run: cargo build --verbose --release
+
+      - name: GPG sign binary
+        id: gpg_signing
+        run: python3 gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
+
+      - name: Verify GPG signature
+        run: gpg --batch --verify "${{ steps.gpg_signing.outputs.signature }}" artichoke/target/release/artichoke
+
   python:
     name: Lint and format Python
     runs-on: ubuntu-latest
