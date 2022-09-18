@@ -93,7 +93,6 @@ jobs:
             --binary "artichoke/target/release/airb" \
             --resource artichoke/LICENSE \
             --resource artichoke/README.md \
-            --resource THIRDPARTY.txt \
             --dmg-icon-url "https://artichoke.github.io/logo/Artichoke-dmg.icns"
         env:
           MACOS_NOTARIZE_APP_PASSWORD: ${{ secrets.MACOS_NOTARIZE_APP_PASSWORD }}
