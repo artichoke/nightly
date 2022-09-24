@@ -145,7 +145,7 @@ jobs:
           echo "::set-output name=commit::${release_commit}"
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@v1.0.0
+        uses: artichoke/generate_third_party@v1.1.0
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
