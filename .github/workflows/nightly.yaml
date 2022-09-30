@@ -210,7 +210,10 @@ jobs:
 
       - name: Install gcc aarch64 cross compiler
         if: matrix.build == 'linux-arm64'
-        run: sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+        run: |
+          sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          # https://github.com/rust-lang/rust-bindgen/issues/1229
+          echo 'BINDGEN_EXTRA_CLANG_ARGS=--sysroot=/usr/aarch64-linux-gnu' >> $GITHUB_ENV
 
       - name: Build release artifacts
         working-directory: artichoke
