@@ -94,25 +94,29 @@ jobs:
       fail-fast: false
       matrix:
         build:
-          - linux
-          - linux-musl
-          - macos
-          - macos-apple-silicon
-          - windows
+          - linux-x64
+          - linux-x64-musl
+          - linux-arm64
+          - macos-x64
+          - macos-arm64
+          - windows-x64
         include:
-          - build: linux
+          - build: linux-x64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          - build: linux-musl
+          - build: linux-x64-musl
             os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-          - build: macos
+          - build: linux-arm64
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+          - build: macos-x64
             os: macos-latest
             target: x86_64-apple-darwin
-          - build: macos-apple-silicon
+          - build: macos-arm64
             os: macos-11
             target: aarch64-apple-darwin
-          - build: windows
+          - build: windows-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
     env:
@@ -200,9 +204,18 @@ jobs:
       - name: List keys
         run: gpg -K
 
-      - name: Install musl
-        if: matrix.build == 'linux-musl'
+      - name: Install musl x86_64
+        if: matrix.build == 'linux-x64-musl'
         run: sudo apt install musl-tools
+
+      - name: Install gcc aarch64 cross compiler
+        if: matrix.build == 'linux-arm64'
+        run: |
+          sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          # https://github.com/rust-lang/rust-bindgen/issues/1229
+          echo 'BINDGEN_EXTRA_CLANG_ARGS=--sysroot=/usr/aarch64-linux-gnu' >> $GITHUB_ENV
+          # https://github.com/rust-lang/rust/issues/28924
+          echo 'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc' >> $GITHUB_ENV
 
       - name: Build release artifacts
         working-directory: artichoke
