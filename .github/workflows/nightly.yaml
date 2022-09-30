@@ -214,6 +214,8 @@ jobs:
           sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           # https://github.com/rust-lang/rust-bindgen/issues/1229
           echo 'BINDGEN_EXTRA_CLANG_ARGS=--sysroot=/usr/aarch64-linux-gnu' >> $GITHUB_ENV
+          # https://github.com/rust-lang/rust/issues/28924
+          echo 'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc' >> $GITHUB_ENV
 
       - name: Build release artifacts
         working-directory: artichoke
