@@ -39,8 +39,8 @@ jobs:
           fi
           echo "Release name is: ${release_name}"
           echo "Release version is: ${release_tag}"
-          echo "::set-output name=name::${release_name}"
-          echo "::set-output name=tag::${release_tag}"
+          echo "name=${release_name}" >> $GITHUB_OUTPUT
+          echo "tag=${release_tag}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
         uses: actions/checkout@v3
@@ -54,7 +54,7 @@ jobs:
         run: |
           artichoke_head=$(git rev-parse HEAD)
           echo "Artichoke HEAD commit is: ${artichoke_head}"
-          echo "::set-output name=commit::${artichoke_head}"
+          echo "commit=${artichoke_head}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub release
         id: release
@@ -144,9 +144,9 @@ jobs:
           echo "Release version: ${release_version}"
           echo "Release commit: ${release_commit}"
 
-          echo "::set-output name=upload_url::${release_upload_url}"
-          echo "::set-output name=version::${release_version}"
-          echo "::set-output name=commit::${release_commit}"
+          echo "upload_url=${release_upload_url}" >> $GITHUB_OUTPUT
+          echo "version=${release_version}" >> $GITHUB_OUTPUT
+          echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
         uses: artichoke/generate_third_party@v1.2.0
@@ -285,14 +285,14 @@ jobs:
             cp "artichoke/target/${{ matrix.target }}/release/artichoke.exe" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb.exe" "$staging/"
             7z a "$staging.zip" "$staging"
-            echo "::set-output name=asset::$staging.zip"
-            echo "::set-output name=content_type::application/zip"
+            echo "asset=$staging.zip" >> $GITHUB_OUTPUT
+            echo "content_type=application/zip" >> $GITHUB_OUTPUT
           else
             cp "artichoke/target/${{ matrix.target }}/release/artichoke" "$staging/"
             cp "artichoke/target/${{ matrix.target }}/release/airb" "$staging/"
             tar czf "$staging.tar.gz" "$staging"
-            echo "::set-output name=asset::$staging.tar.gz"
-            echo "::set-output name=content_type::application/gzip"
+            echo "asset=$staging.tar.gz" >> $GITHUB_OUTPUT
+            echo "content_type=application/gzip" >> $GITHUB_OUTPUT
           fi
 
       - name: GPG sign archive
@@ -338,7 +338,7 @@ jobs:
 
       - name: Set publish_info
         id: publish_info
-        run: echo "::set-output name=release_tag::$(cat artifacts/release-version)"
+        run: echo "release_tag=$(cat artifacts/release-version)" >> $GITHUB_OUTPUT
 
       - name: Publish release
         uses: ncipollo/release-action@v1

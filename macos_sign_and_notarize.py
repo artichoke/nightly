@@ -48,9 +48,12 @@ def set_output(*, name: str, value: str) -> None:
     Set an output for a GitHub Actions job.
 
     https://docs.github.com/en/actions/using-jobs/defining-outputs-for-jobs
+    https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
     """
 
-    print(f"::set-output name={name}::{value}")
+    if github_output := os.getenv("GITHUB_OUTPUT"):
+        with open(github_output, "a") as out:
+            print(f"{name}={value}", file=out)
 
 
 @contextmanager
