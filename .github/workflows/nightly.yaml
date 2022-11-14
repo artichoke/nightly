@@ -168,14 +168,18 @@ jobs:
           # constants like `RUBY_REVISION` by walking the git history.
           fetch-depth: 0
 
-      - name: Setup rust-toolchain override
+      - name: Set Artichoke Rust toolchain version
         shell: bash
-        run: cp artichoke/rust-toolchain rust-toolchain
+        id: rust_toolchain
+        working-directory: artichoke
+        run: |
+          echo "Rust toolchain version: $(cat rust-toolchain)"
+          echo "version=$(cat rust-toolchain)" >> $GITHUB_OUTPUT
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: artichoke/setup-rust/build-and-test@v1
         with:
-          profile: minimal
+          toolchain: ${{ steps.rust_toolchain.outputs.version }}
           target: ${{ matrix.target }}
 
       - name: Setup Python
