@@ -210,11 +210,14 @@ jobs:
 
       - name: Install musl x86_64
         if: matrix.build == 'linux-x64-musl'
-        run: sudo apt install musl-tools
+        run: |
+          sudo apt update
+          sudo apt install musl-tools
 
       - name: Install gcc aarch64 cross compiler
         if: matrix.build == 'linux-arm64'
         run: |
+          sudo apt update
           sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           # https://github.com/rust-lang/rust-bindgen/issues/1229
           echo 'BINDGEN_EXTRA_CLANG_ARGS=--sysroot=/usr/aarch64-linux-gnu' >> $GITHUB_ENV
