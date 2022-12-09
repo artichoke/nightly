@@ -127,7 +127,7 @@ jobs:
       - name: Run flake8
         run: venv/bin/flake8 .
 
-      - name: Run flake8
+      - name: Run mypy
         run: venv/bin/mypy .
 
   ruby:
