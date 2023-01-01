@@ -14,3 +14,7 @@ python_version = "3.11"
 strict = true
 show_error_codes = true
 pretty = true
+exclude = [
+  "^.git$",
+  "^venv$",
+]
