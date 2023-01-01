@@ -72,13 +72,13 @@ mypy-extensions==0.4.3 \
     # via
     #   black
     #   mypy
-pathspec==0.10.2 \
-    --hash=sha256:88c2606f2c1e818b978540f73ecc908e13999c6c3a383daf3705652ae79807a5 \
-    --hash=sha256:8f6bf73e5758fd365ef5d58ce09ac7c27d2833a8d7da51712eac6e27e35141b0
+pathspec==0.10.3 \
+    --hash=sha256:3c95343af8b756205e2aba76e843ba9520a24dd84f68c22b9f93251507509dd6 \
+    --hash=sha256:56200de4077d9d0791465aa9095a01d421861e405b5096955051deefd697d6f6
     # via black
-platformdirs==2.6.0 \
-    --hash=sha256:1a89a12377800c81983db6be069ec068eee989748799b946cce2a6e80dcc54ca \
-    --hash=sha256:b46ffafa316e6b83b47489d240ce17173f123a9b9c83282141c3daf26ad9ac2e
+platformdirs==2.6.2 \
+    --hash=sha256:83c8f6d04389165de7c9b6f0c682439697887bca0aa2f1c87ef1826be3584490 \
+    --hash=sha256:e1fea1fe471b9ff8332e229df3cb7de4f53eeea4998d3b6bfff542115e998bd2
     # via black
 pycodestyle==2.9.1 \
     --hash=sha256:2c9607871d58c76354b697b42f5d57e1ada7d261c261efac224b664affdc5785 \
