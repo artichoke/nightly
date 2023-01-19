@@ -36,8 +36,6 @@ $ rbenv install artichoke-dev
 
 Currently supported nightly targets are:
 
-Currently supported nightly targets are:
-
 - [`x86_64-unknown-linux-gnu`]
 - [`x86_64-unknown-linux-musl`]
 - [`x86_64-apple-darwin`]
