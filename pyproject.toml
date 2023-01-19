@@ -18,3 +18,33 @@ exclude = [
   "^.git$",
   "^venv$",
 ]
+
+[tool.ruff]
+select = [
+  "E",
+  "F",
+  "I",
+  "UP",
+  "YTT",
+  "ANN",
+  "S",
+  "BLE",
+  "FBT",
+  "B",
+  "C4",
+  "T10",
+  "ISC",
+  "ICN",
+  "RET",
+  "SIM",
+  "ARG",
+  "ERA",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "PIE",
+  "RUF",
+]
+
+ignore = ["UP007"]

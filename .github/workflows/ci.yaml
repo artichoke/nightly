@@ -121,11 +121,8 @@ jobs:
       - name: Run black
         run: venv/bin/black --check --diff --verbose .
 
-      - name: Run isort
-        run: venv/bin/isort --check --diff --verbose .
-
-      - name: Run flake8
-        run: venv/bin/flake8 .
+      - name: Run ruff
+        run: venv/bin/ruff --format=github .
 
       - name: Run mypy
         run: venv/bin/mypy .
