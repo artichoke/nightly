@@ -7,7 +7,7 @@ import subprocess
 import sys
 import traceback
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 
 GPG_SIGN_VERSION = "0.2.1"
@@ -101,10 +101,8 @@ def gpg_sign_artifact(*, artifact: Path, release_name: str) -> Path:
 
     stage = Path("dist").joinpath(release_name)
     with log_group(f"Create GPG signature [{artifact.name}]"):
-        try:
+        with suppress(FileNotFoundError):
             shutil.rmtree(stage)
-        except FileNotFoundError:
-            pass
         os.makedirs(stage, exist_ok=True)
 
         asc = stage.joinpath(f"{artifact.name}.asc")
@@ -200,7 +198,7 @@ def main() -> int:
         print()
         print(traceback.format_exc(), file=sys.stderr)
         return e.returncode
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error: {e}", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         return 1

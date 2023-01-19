@@ -9,12 +9,12 @@ import secrets
 import shutil
 import subprocess
 import sys
-import tempfile
 import traceback
 import urllib.request
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Optional
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.1"
@@ -105,6 +105,8 @@ def get_image_size(image: Path) -> int:
     https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg#L306-L315
     """
 
+    MACOS_MONTEREY_MAJOR_VERSION = 12
+
     proc = subprocess.run(
         ["/usr/bin/sw_vers", "-productVersion"],
         check=True,
@@ -113,7 +115,7 @@ def get_image_size(image: Path) -> int:
     )
     major, *_rest = proc.stdout.strip().split(".", 1)
 
-    if int(major) >= 12:
+    if int(major) >= MACOS_MONTEREY_MAJOR_VERSION:
         proc = subprocess.run(
             ["/usr/bin/du", "-B", "512", "-s", str(image)],
             check=True,
@@ -169,8 +171,8 @@ def keychain_path() -> Path:
     # directory is emptied at the beginning and end of each job.
     if runner_temp := os.getenv("RUNNER_TEMP"):
         return Path(runner_temp).joinpath("notarization.keychain-db")
-    else:
-        return Path("notarization.keychain-db").resolve()
+
+    return Path("notarization.keychain-db").resolve()
 
 
 def notarytool_credentials_profile() -> str:
@@ -374,10 +376,6 @@ def import_certificate(
     Import a certificate at a given path into the build keychain.
     """
 
-    # security import certificate.p12 \
-    #   -k "$keychain_path" \
-    #   -P "$MACOS_CERTIFICATE_PWD" \
-    #   -T /usr/bin/codesign
     command = [
         "security",
         "import",
@@ -416,8 +414,8 @@ def import_codesigning_certificate() -> None:
 
         try:
             certificate = base64.b64decode(encoded_certificate, validate=True)
-        except binascii.Error:
-            raise Exception("MACOS_CERTIFICATE must be base64 encoded")
+        except binascii.Error as exc:
+            raise Exception("MACOS_CERTIFICATE must be base64 encoded") from exc
 
         certificate_password = os.getenv("MACOS_CERTIFICATE_PASSPHRASE")
         if not certificate_password:
@@ -425,7 +423,7 @@ def import_codesigning_certificate() -> None:
                 "MACOS_CERTIFICATE_PASSPHRASE environment variable is required"
             )
 
-        with tempfile.TemporaryDirectory() as tempdirname:
+        with TemporaryDirectory() as tempdirname:
             cert = Path(tempdirname).joinpath("certificate.p12")
             cert.write_bytes(certificate)
             import_certificate(
@@ -461,9 +459,6 @@ def setup_codesigning_and_notarization_keychain(*, keychain_password: str) -> No
     import_codesigning_certificate()
 
     with log_group("Prepare keychain for codesigning"):
-        # security set-key-partition-list \
-        #   -S "apple-tool:,apple:,codesign:" \
-        #   -s -k "$keychain_password" "$keychain_path"
         run_command_with_merged_output(
             [
                 "security",
@@ -483,15 +478,6 @@ def codesign_binary(*, binary_path: Path) -> None:
     Run the codesigning process on the given binary.
     """
 
-    # /usr/bin/codesign \
-    #   --keychain "$keychain_path" \
-    #   --sign "Developer ID Application: Ryan Lopopolo (VDKP67932G)" \
-    #   --options runtime \
-    #   --strict=all \
-    #   --timestamp \
-    #   --verbose \
-    #   --force \
-    #   "$binary_path"
     with log_group(f"Run codesigning [{binary_path.name}]"):
         run_command_with_merged_output(
             [
@@ -521,7 +507,7 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
 
     with log_group("Set disk image icon"):
         dmg_icns_path = dest.joinpath(".VolumeIcon.icns")
-        with tempfile.TemporaryDirectory() as tempdirname:
+        with TemporaryDirectory() as tempdirname:
             icns = Path(tempdirname).joinpath(".VolumeIcon.icns")
 
             print(f"Fetching DMG icns file at {url}")
@@ -561,10 +547,8 @@ def create_notarization_bundle(
 
     with log_group("Create disk image for notarization"):
         dmg.unlink(missing_ok=True)
-        try:
+        with suppress(FileNotFoundError):
             shutil.rmtree(stage)
-        except FileNotFoundError:
-            pass
         os.makedirs(stage, exist_ok=True)
 
         for binary in binaries:
@@ -686,26 +670,25 @@ def notarize_bundle(*, bundle: Path) -> None:
     #   2efe2717-52ef-43a5-96dc-0797e4ca1041 \
     #  --keychain-profile "AC_PASSWORD" \
     #   developer_log.json
-    with log_group("Fetch notarization logs"):
-        with tempfile.TemporaryDirectory() as tempdirname:
-            logs = Path(tempdirname).joinpath("notarization_logs.json")
-            subprocess.run(
-                [
-                    "/usr/bin/xcrun",
-                    "notarytool",
-                    "log",
-                    notarization_request,
-                    "--keychain-profile",
-                    notarytool_credentials_profile(),
-                    "--keychain",
-                    str(keychain_path()),
-                    str(logs),
-                ],
-                check=True,
-            )
-            with logs.open("r") as log:
-                log_json = json.load(log)
-                print(json.dumps(log_json, indent=4))
+    with log_group("Fetch notarization logs"), TemporaryDirectory() as tempdirname:
+        logs = Path(tempdirname).joinpath("notarization_logs.json")
+        subprocess.run(
+            [
+                "/usr/bin/xcrun",
+                "notarytool",
+                "log",
+                notarization_request,
+                "--keychain-profile",
+                notarytool_credentials_profile(),
+                "--keychain",
+                str(keychain_path()),
+                str(logs),
+            ],
+            check=True,
+        )
+        with logs.open("r") as log:
+            log_json = json.load(log)
+            print(json.dumps(log_json, indent=4))
 
 
 def staple_bundle(*, bundle: Path) -> None:
@@ -730,10 +713,6 @@ def validate(*, bundle: Path, binary_names: list[str]) -> None:
         )
 
     with log_group("Verify disk image signature"):
-        # spctl -a -t open \
-        #   --context context:primary-signature \
-        #   2022-09-03-test-codesign-notarize-dmg-v1.dmg \
-        #   -v
         run_command_with_merged_output(
             [
                 "/usr/sbin/spctl",
@@ -875,7 +854,7 @@ def main() -> int:
         print()
         print(traceback.format_exc(), file=sys.stderr)
         return e.returncode
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error: {e}", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         return 1
