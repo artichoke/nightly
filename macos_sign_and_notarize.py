@@ -304,7 +304,7 @@ def create_keychain(*, keychain_password: str) -> None:
         search_path.append(str(keychain_path()))
 
         run_command_with_merged_output(
-            ["security", "list-keychains", "-d", "user", "-s"] + search_path
+            ["security", "list-keychains", "-d", "user", "-s", *search_path]
         )
         print(f"Set keychain search path: {', '.join(search_path)}")
 
