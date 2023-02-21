@@ -2,8 +2,10 @@
 
 !**/*/
 
+.mypy_cache/
 node_modules/
 target/
+venv/
 
 !*.html
 !*.js
