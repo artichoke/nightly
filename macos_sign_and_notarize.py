@@ -15,9 +15,59 @@ from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from time import sleep
 from typing import Optional
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.1"
+
+
+class NotaryToolException(Exception):
+    pass
+
+
+def run_notarytool(
+    command: list[str], *, retries: int = 3, backoff_s: float = 5.0
+) -> str:
+    """
+    Run the given notarytool command as a subprocess and return its stdout
+    contents on success.
+
+    This function invokes notarytool in a retry loop with exponential backoff to
+    address flakiness where notarytool may abort with a HTTP 500 error.
+
+    This command uses `check=False` when delegating to `subprocess`.
+    """
+
+    if command[:2] != ["/usr/bin/xcrun", "notarytool"]:
+        raise ValueError(
+            "run_notarytool requires `/usr/bin/xcrun notarytool` command prefix"
+        )
+
+    attempt = 0
+    while attempt < retries:
+        proc = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr)
+
+        if proc.returncode == 0:
+            return proc.stdout
+
+        # Sometimes, the API that backs `notarytool` returns 500 errors. Try to
+        # inspect stderr for known 500s and retry with exponential backoff.
+        #
+        # See: https://github.com/artichoke/nightly/issues/129
+        if "Error: HTTP status code: 500. Internal Server Error" in proc.stderr:
+            sleep(backoff_s)
+            backoff_s *= 1.5
+
+        attempt += 1
+
+    raise NotaryToolException(" ".join(command))
 
 
 def run_command_with_merged_output(command: list[str]) -> None:
@@ -351,7 +401,7 @@ def import_notarization_credentials() -> None:
         #   --password "$MACOS_NOTARIZE_APP_PASSWORD" \
         #   --team-id "VDKP67932G" \
         #   --keychain "$keychain_path"
-        run_command_with_merged_output(
+        output = run_notarytool(
             [
                 "/usr/bin/xcrun",
                 "notarytool",
@@ -367,6 +417,7 @@ def import_notarization_credentials() -> None:
                 str(keychain_path()),
             ],
         )
+        print(output)
 
 
 def import_certificate(
@@ -639,25 +690,20 @@ def notarize_bundle(*, bundle: Path) -> None:
     #   --keychain "$keychain_path" \
     #   --wait
     with log_group("Notarize disk image"):
-        proc = subprocess.run(
+        output = run_notarytool(
             [
                 "/usr/bin/xcrun",
                 "notarytool",
                 "submit",
-                bundle,
+                str(bundle),
                 "--keychain-profile",
                 notarytool_credentials_profile(),
                 "--keychain",
                 str(keychain_path()),
                 "--wait",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
+            ]
         )
-        if proc.stderr:
-            print(proc.stderr, file=sys.stderr)
-        for line in proc.stdout.splitlines():
+        for line in output.splitlines():
             print(line.rstrip())
             line = line.strip()
             if line.startswith("id: "):
@@ -672,7 +718,7 @@ def notarize_bundle(*, bundle: Path) -> None:
     #   developer_log.json
     with log_group("Fetch notarization logs"), TemporaryDirectory() as tempdirname:
         logs = Path(tempdirname).joinpath("notarization_logs.json")
-        subprocess.run(
+        output = run_notarytool(
             [
                 "/usr/bin/xcrun",
                 "notarytool",
@@ -683,9 +729,9 @@ def notarize_bundle(*, bundle: Path) -> None:
                 "--keychain",
                 str(keychain_path()),
                 str(logs),
-            ],
-            check=True,
+            ]
         )
+        print(output)
         with logs.open("r") as log:
             log_json = json.load(log)
             print(json.dumps(log_json, indent=4))
