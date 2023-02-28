@@ -25,7 +25,9 @@ class NotaryToolException(Exception):
     pass
 
 
-def run_notarytool(command: list[str], *, retries: int = 3, backoff_s: float = 5.0) -> str:
+def run_notarytool(
+    command: list[str], *, retries: int = 3, backoff_s: float = 5.0
+) -> str:
     """
     Run the given notarytool command as a subprocess and return its stdout
     contents on success.
