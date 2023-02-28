@@ -25,7 +25,7 @@ class NotaryToolException(Exception):
     pass
 
 
-def run_notarytool(command: list[str], *, retries: int = 3, backoff_s: int = 5) -> str:
+def run_notarytool(command: list[str], *, retries: int = 3, backoff_s: float = 5.0) -> str:
     """
     Run the given notarytool command as a subprocess and return its stdout
     contents on success.
@@ -693,7 +693,7 @@ def notarize_bundle(*, bundle: Path) -> None:
                 "/usr/bin/xcrun",
                 "notarytool",
                 "submit",
-                bundle,
+                str(bundle),
                 "--keychain-profile",
                 notarytool_credentials_profile(),
                 "--keychain",
