@@ -13,12 +13,21 @@ import traceback
 import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import Optional
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.1"
+
+
+@dataclass(frozen=True, kw_only=True)
+class Args:
+    resources: list[Path]
+    binaries: list[Path]
+    dmg_icon_url: str
+    release: str
 
 
 class NotaryToolException(Exception):
@@ -799,7 +808,7 @@ def validate(*, bundle: Path, binary_names: list[str]) -> None:
                 )
 
 
-def main() -> int:
+def parse_args() -> Args:
     parser = argparse.ArgumentParser(
         description="Create Apple code signatures and notarized archives"
     )
@@ -839,28 +848,33 @@ def main() -> int:
 
     for binary in args.binaries:
         if not binary.is_file():
-            print(f"Error: binary file {binary} does not exist", file=sys.stderr)
-            return 1
+            raise ValueError(f"binary file {binary} does not exist")
+
     for resource in args.resources:
         if not resource.is_file():
-            print(f"Error: resource file {resource} does not exist", file=sys.stderr)
-            return 1
+            raise ValueError(f"resource file {resource} does not exist")
 
-    dmg_icon_url = None
-    if args.dmg_icon_url:
-        if len(args.dmg_icon_url) > 1:
-            print(
-                (
-                    "Error: Too many DMG icon URLs provided. "
-                    "At most one DMG icon URL may be provided."
-                ),
-                file=sys.stderr,
-            )
-            return 1
-        dmg_icon_url = args.dmg_icon_url[0]
+    if args.dmg_icon_url and len(args.dmg_icon_url) > 1:
+        raise ValueError(
+            "Too many DMG icon URLs provided. At most one DMG icon URL may be provided."
+        )
 
+    if not args.release:
+        raise ValueError("release name must be provided")
+
+    return Args(
+        resources=args.resources,
+        binaries=args.binaries,
+        dmg_icon_url=args.dmg_icon_url[0],
+        release=args.release,
+    )
+
+
+def main() -> int:
     try:
         emit_metadata()
+
+        args = parse_args()
 
         keychain_password = secrets.token_urlsafe()
         setup_codesigning_and_notarization_keychain(keychain_password=keychain_password)
@@ -872,7 +886,7 @@ def main() -> int:
             release_name=args.release,
             binaries=args.binaries,
             resources=args.resources,
-            dmg_icon_url=dmg_icon_url,
+            dmg_icon_url=args.dmg_icon_url,
         )
         notarize_bundle(bundle=bundle)
         staple_bundle(bundle=bundle)
