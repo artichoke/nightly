@@ -11,7 +11,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 
-GPG_SIGN_VERSION = "0.2.1"
+GPG_SIGN_VERSION = "0.3.0"
 
 
 @dataclass(frozen=True, kw_only=True)
