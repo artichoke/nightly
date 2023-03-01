@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 import traceback
-import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass
@@ -18,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import Optional
+from urllib.request import urlopen
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.1"
 
@@ -566,19 +566,14 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
     """
 
     with log_group("Set disk image icon"):
-        dmg_icns_path = dest.joinpath(".VolumeIcon.icns")
-        with TemporaryDirectory() as tempdirname:
-            icns = Path(tempdirname).joinpath(".VolumeIcon.icns")
+        icns = dest.joinpath(".VolumeIcon.icns")
 
-            print(f"Fetching DMG icns file at {url}")
-            urllib.request.urlretrieve(url, str(icns))
+        print(f"Fetching DMG icns file at {url}")
+        with urlopen(url, data=None, timeout=3) as remote, icns.open("wb") as out:
+            print("Copying remote icns file to DMG archive")
+            shutil.copyfileobj(remote, out)
 
-            print("Copying downloaded icns file to DMG archive")
-            shutil.copy(icns, dmg_icns_path)
-
-        run_command_with_merged_output(
-            ["/usr/bin/SetFile", "-c", "icnC", str(dmg_icns_path)]
-        )
+        run_command_with_merged_output(["/usr/bin/SetFile", "-c", "icnC", str(icns)])
         # Tell the volume that it has a special file attribute
         run_command_with_merged_output(["/usr/bin/SetFile", "-a", "C", str(dest)])
         print("DMG icns file set!")
