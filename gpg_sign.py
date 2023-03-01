@@ -8,9 +8,16 @@ import sys
 import traceback
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
+from dataclasses import dataclass
 from pathlib import Path
 
 GPG_SIGN_VERSION = "0.2.1"
+
+
+@dataclass(frozen=True, kw_only=True)
+class Args:
+    artifact: Path
+    release: str
 
 
 def run_command_with_merged_output(command: list[str]) -> None:
@@ -136,7 +143,7 @@ def validate(*, artifact: Path, asc: Path) -> None:
         )
 
 
-def main() -> int:
+def parse_args() -> Args:
     parser = argparse.ArgumentParser(
         description="Compute a GPG signature for an artifact"
     )
@@ -157,26 +164,34 @@ def main() -> int:
     parser.add_argument("release", help="release name")
     args = parser.parse_args()
 
-    if len(args.artifact) > 1:
-        print(
-            (
-                "Error: Too many artifacts provided. "
-                "GPG signing script can only sign one artifact at a time."
-            ),
-            file=sys.stderr,
-        )
-        return 1
+    if not args.artifact:
+        raise ValueError("must provide an artifact to compute a signature for")
 
-    artifact = args.artifact[0]
+    artifact, *rest = args.artifact
+
+    if rest:
+        raise ValueError("too many artifacts provided")
+
     if not artifact.is_file():
-        print(f"Error: artifact file {artifact} does not exist", file=sys.stderr)
-        return 1
+        raise ValueError(f"artifact file {artifact} does not exist")
 
+    if not args.release:
+        raise ValueError("release name must be provided")
+
+    return Args(
+        artifact=artifact,
+        release=args.release,
+    )
+
+
+def main() -> int:
     try:
         emit_metadata()
 
-        signature = gpg_sign_artifact(artifact=artifact, release_name=args.release)
-        validate(artifact=artifact, asc=signature)
+        args = parse_args()
+
+        signature = gpg_sign_artifact(artifact=args.artifact, release_name=args.release)
+        validate(artifact=args.artifact, asc=signature)
 
         set_output(name="signature", value=str(signature))
 
