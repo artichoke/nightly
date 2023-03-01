@@ -705,9 +705,8 @@ def notarize_bundle(*, bundle: Path) -> None:
         )
         for line in output.splitlines():
             print(line.rstrip())
-            line = line.strip()
-            if line.startswith("id: "):
-                notarization_request = line.removeprefix("id: ")
+            if line.strip().startswith("id: "):
+                notarization_request = line.strip().removeprefix("id: ")
 
     if not notarization_request:
         raise Exception("Notarization request did not return an id on success")
