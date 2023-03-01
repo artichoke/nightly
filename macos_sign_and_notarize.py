@@ -19,7 +19,7 @@ from time import sleep
 from typing import Optional
 from urllib.request import urlopen
 
-MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.1"
+MACOS_SIGN_AND_NOTARIZE_VERSION = "0.4.0"
 
 
 @dataclass(frozen=True, kw_only=True)
