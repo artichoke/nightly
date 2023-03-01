@@ -26,7 +26,7 @@ MACOS_SIGN_AND_NOTARIZE_VERSION = "0.3.1"
 class Args:
     resources: list[Path]
     binaries: list[Path]
-    dmg_icon_url: str
+    dmg_icon_url: Optional[str]
     release: str
 
 
@@ -855,9 +855,7 @@ def parse_args() -> Args:
             raise ValueError(f"resource file {resource} does not exist")
 
     if args.dmg_icon_url and len(args.dmg_icon_url) > 1:
-        raise ValueError(
-            "Too many DMG icon URLs provided. At most one DMG icon URL may be provided."
-        )
+        raise ValueError("too many DMG icon URLs provided")
 
     if not args.release:
         raise ValueError("release name must be provided")
@@ -865,7 +863,7 @@ def parse_args() -> Args:
     return Args(
         resources=args.resources,
         binaries=args.binaries,
-        dmg_icon_url=args.dmg_icon_url[0],
+        dmg_icon_url=args.dmg_icon_url[0] if args.dmg_icon_url else None,
         release=args.release,
     )
 
