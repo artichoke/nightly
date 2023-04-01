@@ -20,6 +20,12 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
 
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv --upgrade-deps venv
+          venv/bin/pip install --upgrade pip wheel
+          venv/bin/pip install -r requirements.txt
+
       - name: Clone Artichoke
         uses: actions/checkout@v3
         with:
@@ -53,7 +59,7 @@ jobs:
 
       - name: GPG sign binary
         id: gpg_signing
-        run: python3 gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
+        run: venv/bin/python3 gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
 
       - name: Verify GPG signature
         run: gpg --batch --verify "${{ steps.gpg_signing.outputs.signature }}" artichoke/target/release/artichoke
@@ -67,6 +73,12 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v4
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv --upgrade-deps venv
+          venv/bin/pip install --upgrade pip wheel
+          venv/bin/pip install -r requirements.txt
 
       - name: Clone Artichoke
         uses: actions/checkout@v3
@@ -84,7 +96,7 @@ jobs:
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          python3 macos_sign_and_notarize.py "nightly-apple-codesign-test" \
+          venv/bin/python3 macos_sign_and_notarize.py "nightly-apple-codesign-test" \
             --binary "artichoke/target/release/artichoke" \
             --binary "artichoke/target/release/airb" \
             --resource artichoke/LICENSE \
@@ -113,9 +125,10 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python3 -m venv --upgrade-deps venv
+          venv/bin/pip install --upgrade pip wheel
           venv/bin/pip install -r requirements.txt
 
       - name: Run black

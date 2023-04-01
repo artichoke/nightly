@@ -19,7 +19,9 @@ from time import sleep
 from typing import Optional
 from urllib.request import urlopen
 
-MACOS_SIGN_AND_NOTARIZE_VERSION = "0.4.0"
+import validators
+
+MACOS_SIGN_AND_NOTARIZE_VERSION = "0.5.0"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -569,7 +571,15 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
         icns = dest.joinpath(".VolumeIcon.icns")
 
         print(f"Fetching DMG icns file at {url}")
-        with urlopen(url, data=None, timeout=3) as remote, icns.open("wb") as out:
+
+        validation = validators.url(url)
+        if not validation:
+            print("Invalid DMG icns asset URL, skipping")
+            return
+
+        with urlopen(url, data=None, timeout=3) as remote, icns.open(  # noqa: S310
+            "wb"
+        ) as out:
             print("Copying remote icns file to DMG archive")
             shutil.copyfileobj(remote, out)
 
