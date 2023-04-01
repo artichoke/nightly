@@ -572,7 +572,7 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
 
         print(f"Fetching DMG icns file at {url}")
 
-        validation = validators.url(url)
+        validation = validators.url(url, public=True)
         if not validation:
             print("Invalid DMG icns asset URL, skipping")
             return
