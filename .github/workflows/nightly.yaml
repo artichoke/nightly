@@ -185,6 +185,12 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
 
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv --upgrade-deps venv
+          venv/bin/pip install --upgrade pip wheel
+          venv/bin/pip install -r requirements.txt
+
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
       # pub   ed25519 2021-01-03 [SC]
@@ -232,7 +238,7 @@ jobs:
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          python3 macos_sign_and_notarize.py "artichoke-nightly-${{ matrix.target }}" \
+          venv/bin/python3 macos_sign_and_notarize.py "artichoke-nightly-${{ matrix.target }}" \
             --binary "artichoke/target/${{ matrix.target }}/release/artichoke" \
             --binary "artichoke/target/${{ matrix.target }}/release/airb" \
             --resource artichoke/LICENSE \
@@ -248,7 +254,7 @@ jobs:
         id: apple_codesigning_gpg
         if: runner.os == 'macOS'
         run: |
-          python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" \
+          venv/bin/python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" \
             --artifact "${{ steps.apple_codesigning.outputs.asset }}"
 
       - name: Upload release archive
@@ -302,7 +308,7 @@ jobs:
 
       - name: GPG sign archive
         id: gpg_signing
-        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
+        run: venv/bin/python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@v1
