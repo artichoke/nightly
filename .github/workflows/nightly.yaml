@@ -149,7 +149,7 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@v1.5.0
+        uses: artichoke/generate_third_party@v1.6.0
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
