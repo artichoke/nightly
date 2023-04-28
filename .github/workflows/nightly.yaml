@@ -43,7 +43,7 @@ jobs:
           echo "tag=${release_tag}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.2
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -58,7 +58,7 @@ jobs:
 
       - name: Create GitHub release
         id: release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_version.outputs.tag }}
@@ -80,7 +80,7 @@ jobs:
         run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: artifacts
           path: artifacts
@@ -124,10 +124,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.2
 
       - name: Get release download URL
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v3.0.2
         with:
           name: artifacts
           path: artifacts
@@ -149,7 +149,7 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@v1.6.0
+        uses: artichoke/generate_third_party@v1.10.0
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
@@ -157,7 +157,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone Artichoke
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.2
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -177,13 +177,13 @@ jobs:
           echo "version=$(cat rust-toolchain)" >> $GITHUB_OUTPUT
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v1
+        uses: artichoke/setup-rust/build-and-test@v1.9.0
         with:
           toolchain: ${{ steps.rust_toolchain.outputs.version }}
           target: ${{ matrix.target }}
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v4.6.0
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
@@ -259,7 +259,7 @@ jobs:
             --artifact "${{ steps.apple_codesigning.outputs.asset }}"
 
       - name: Upload release archive
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
         if: runner.os == 'macOS'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -273,7 +273,7 @@ jobs:
           artifactContentType: ${{ steps.apple_codesigning.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
         if: runner.os == 'macOS'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -312,7 +312,7 @@ jobs:
         run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -325,7 +325,7 @@ jobs:
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -343,7 +343,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get release download URL
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v3.0.2
         with:
           name: artifacts
           path: artifacts
@@ -353,7 +353,7 @@ jobs:
         run: echo "release_tag=$(cat artifacts/release-version)" >> $GITHUB_OUTPUT
 
       - name: Publish release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.publish_info.outputs.release_tag }}
@@ -363,7 +363,7 @@ jobs:
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
 
-      - uses: eregon/keep-last-n-releases@v1
+      - uses: eregon/keep-last-n-releases@c662ecf90e35b1070a4894539d8804a286e55151 # v1
         if: github.event_name == 'schedule'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
