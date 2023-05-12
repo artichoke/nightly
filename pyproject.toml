@@ -51,4 +51,4 @@ select = [
   "RUF",
 ]
 
-ignore = ["UP007"]
+ignore = ["S603", "UP007"]

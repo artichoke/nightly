@@ -353,7 +353,7 @@ def create_keychain(*, keychain_password: str) -> None:
         #
         # `security delete-keychain` removes the keychain from the search path.
         proc = subprocess.run(
-            ["security", "list-keychains", "-d", "user"],
+            ["/usr/bin/security", "list-keychains", "-d", "user"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -365,7 +365,7 @@ def create_keychain(*, keychain_password: str) -> None:
         search_path.append(str(keychain_path()))
 
         run_command_with_merged_output(
-            ["security", "list-keychains", "-d", "user", "-s", *search_path]
+            ["/usr/bin/security", "list-keychains", "-d", "user", "-s", *search_path]
         )
         print(f"Set keychain search path: {', '.join(search_path)}")
 
@@ -381,7 +381,7 @@ def delete_keychain() -> None:
     with log_group("Delete keychain"):
         # security delete-keychain /path/to/notarization.keychain-db
         proc = subprocess.run(
-            ["security", "delete-keychain", str(keychain_path())],
+            ["/usr/bin/security", "delete-keychain", str(keychain_path())],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
