@@ -183,7 +183,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Setup Python
-        uses: actions/setup-python@v4.6.0
+        uses: actions/setup-python@v4.6.1
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
