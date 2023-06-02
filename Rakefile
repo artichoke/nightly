@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'fileutils'
 require 'open-uri'
 require 'shellwords'
 require 'bundler/audit/task'
@@ -52,5 +53,25 @@ namespace :release do
       sh command.shelljoin
       sleep(rand(1..5))
     end
+  end
+end
+
+namespace :venv do
+  desc 'Create a new virtualenv with the pinned requirements'
+  task :create do
+    sh 'python3 -m venv --upgrade-deps venv'
+    sh 'venv/bin/pip install wheel pip-tools'
+    sh 'venv/bin/pip install -Ur requirements.txt'
+  end
+
+  desc 'Remove the venv'
+  task :clean do
+    FileUtils.remove_dir('venv', true)
+  end
+
+  desc 'Pin dependencies to requirements.txt'
+  task :pin do
+    FileUtils.remove_file('requirements.txt', true)
+    sh 'venv/bin/pip-compile --generate-hashes --resolver=backtracking requirements.in'
   end
 end
