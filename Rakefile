@@ -16,6 +16,7 @@ namespace :lint do
 
   desc 'Lint Python files with ruff'
   task python: :'venv:create' do
+    sh 'venv/bin/mypy .'
     sh 'venv/bin/ruff .'
   end
 end
@@ -76,7 +77,7 @@ end
 namespace :venv do
   desc 'Create a new virtualenv with the pinned requirements'
   task :create do
-    next if File.exist?('venv/bin/black') && File.exist?('venv/bin/ruff')
+    next if File.exist?('venv/bin/black') && File.exist?('venv/bin/mypy') && File.exist?('venv/bin/ruff')
 
     sh 'python3 -m venv --upgrade-deps venv'
     sh 'venv/bin/pip install wheel pip-tools'
