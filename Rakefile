@@ -9,16 +9,27 @@ require 'rubocop/rake_task'
 task default: %i[format lint]
 
 desc 'Lint sources'
-task lint: %i[lint:rubocop:autocorrect]
+task lint: %i[lint:python lint:rubocop:autocorrect]
 
 namespace :lint do
   RuboCop::RakeTask.new(:rubocop)
+
+  desc 'Lint Python files with ruff'
+  task :python do
+    sh 'venv/bin/ruff .'
+  end
 end
 
 desc 'Format sources'
-task format: %i[format:text]
+task format: %i[format:python format:text]
 
 namespace :format do
+  desc 'Format Python files with black and ruff'
+  task :python do
+    sh 'venv/bin/black .'
+    sh 'venv/bin/ruff --fix .'
+  end
+
   desc 'Format text, YAML, and Markdown sources with prettier'
   task :text do
     sh 'npx prettier --write "**/*"'
@@ -26,9 +37,15 @@ namespace :format do
 end
 
 desc 'Format sources'
-task fmt: %i[fmt:text]
+task fmt: %i[fmt:python fmt:text]
 
 namespace :fmt do
+  desc 'Format Python files with black and ruff'
+  task :python do
+    sh 'venv/bin/black .'
+    sh 'venv/bin/ruff --fix .'
+  end
+
   desc 'Format text, YAML, and Markdown sources with prettier'
   task :text do
     sh 'npx prettier --write "**/*"'
