@@ -15,7 +15,7 @@ namespace :lint do
   RuboCop::RakeTask.new(:rubocop)
 
   desc 'Lint Python files with ruff'
-  task :python do
+  task python: :'venv:create' do
     sh 'venv/bin/ruff .'
   end
 end
@@ -25,7 +25,7 @@ task format: %i[format:python format:text]
 
 namespace :format do
   desc 'Format Python files with black and ruff'
-  task :python do
+  task python: :'venv:create' do
     sh 'venv/bin/black .'
     sh 'venv/bin/ruff --fix .'
   end
@@ -41,7 +41,7 @@ task fmt: %i[fmt:python fmt:text]
 
 namespace :fmt do
   desc 'Format Python files with black and ruff'
-  task :python do
+  task python: :'venv:create' do
     sh 'venv/bin/black .'
     sh 'venv/bin/ruff --fix .'
   end
@@ -76,6 +76,8 @@ end
 namespace :venv do
   desc 'Create a new virtualenv with the pinned requirements'
   task :create do
+    next if File.exist?('venv/bin/black') && File.exist?('venv/bin/ruff')
+
     sh 'python3 -m venv --upgrade-deps venv'
     sh 'venv/bin/pip install wheel pip-tools'
     sh 'venv/bin/pip install -Ur requirements.txt'
