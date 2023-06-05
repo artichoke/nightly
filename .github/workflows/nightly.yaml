@@ -422,6 +422,7 @@ jobs:
         run: |
           git -C artichoke archive \
             --format ${{ matrix.archive }} \
+            -9 \
             --output=`pwd`/artichoke-nightly.source.${{ matrix.archive }} \
             ${{ steps.release_info.outputs.commit }}
 
