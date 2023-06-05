@@ -349,9 +349,135 @@ jobs:
           artifacts: ${{ steps.gpg_signing.outputs.signature }}
           artifactContentType: "text/plain"
 
+  package-source-archive:
+    name: Package Source Archive
+    needs: ["create-release"]
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        archive:
+          - tar.gz
+          - zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3.5.2
+
+      - name: Get release download URL
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: artifacts
+          path: artifacts
+
+      - name: Set release upload URL and release version
+        shell: bash
+        id: release_info
+        run: |
+          release_upload_url="$(cat artifacts/release-upload-url)"
+          release_version="$(cat artifacts/release-version)"
+          release_commit="$(cat artifacts/release-commit-hash)"
+
+          echo "Release upload url: ${release_upload_url}"
+          echo "Release version: ${release_version}"
+          echo "Release commit: ${release_commit}"
+
+          echo "upload_url=${release_upload_url}" >> $GITHUB_OUTPUT
+          echo "version=${release_version}" >> $GITHUB_OUTPUT
+          echo "commit=${release_commit}" >> $GITHUB_OUTPUT
+
+      - name: Clone Artichoke
+        uses: actions/checkout@v3.5.2
+        with:
+          repository: artichoke/artichoke
+          path: artichoke
+          ref: ${{ steps.release_info.outputs.commit }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4.6.1
+
+      # ```
+      # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
+      # pub   ed25519 2021-01-03 [SC]
+      #       C983 8F10 4021 F59E E6F6  BCBE B199 D034 7FDA 14A4
+      # uid           [ultimate] Code signing for Artichoke Ruby <codesign@artichokeruby.org>
+      # sub   cv25519 2021-01-03 [E]
+      #       7719 1B6D 83B2 F4E8 5197  125B A9A3 F70E 710A 15AA
+      # sub   ed25519 2021-01-03 [S]
+      #       1C4A 856A CF86 EC1E E841  180F AF57 A37C AC06 1452
+      # ```
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@72b6676b71ab476b77e676928516f6982eef7a41 # v5.3.0
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
+          fingerprint: 1C4A856ACF86EC1EE841180FAF57A37CAC061452
+
+      - name: List keys
+        run: gpg -K
+
+      - name: Build source archive
+        working-directory: artichoke
+        run: |
+          git archive \
+            --format ${{ matrix.archive }} \
+            --output=artichoke-nightly-source.${{ matrix.archive }} \
+            ${{ steps.release_info.outputs.commit }}
+
+      - name: Install Python dependencies
+        if: runner.os == 'macOS'
+        run: |
+          python3 -m venv --upgrade-deps venv
+          ./venv/bin/pip install --upgrade pip wheel
+          ./venv/bin/pip install -r requirements.txt
+
+      - name: Build archive
+        shell: bash
+        id: build
+        run: |
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            echo "asset=artichoke-nightly-source.zip" >> $GITHUB_OUTPUT
+            echo "content_type=application/zip" >> $GITHUB_OUTPUT
+          else
+            echo "asset=artichoke-nightly-source.tar.gz" >> $GITHUB_OUTPUT
+            echo "content_type=application/gzip" >> $GITHUB_OUTPUT
+          fi
+
+      - name: GPG sign archive
+        id: gpg_signing
+        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.archive }}" --artifact "${{ steps.build.outputs.asset }}"
+
+      - name: Upload release archive
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_info.outputs.version }}
+          draft: true
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          artifacts: ${{ steps.build.outputs.asset }}
+          artifactContentType: ${{ steps.build.outputs.content_type }}
+
+      - name: Upload release signature
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release_info.outputs.version }}
+          draft: true
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          artifacts: ${{ steps.gpg_signing.outputs.signature }}
+          artifactContentType: "text/plain"
+
   finalize-release:
     name: Publish Release
-    needs: ["build-release"]
+    needs: ["build-release", "package-source-archive"]
     runs-on: ubuntu-latest
     steps:
       - name: Get release download URL
