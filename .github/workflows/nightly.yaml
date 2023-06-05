@@ -419,11 +419,10 @@ jobs:
         run: gpg -K
 
       - name: Build source archive
-        working-directory: artichoke
         run: |
-          git archive \
+          git -C artichoke archive \
             --format ${{ matrix.archive }} \
-            --output=artichoke-nightly-source.${{ matrix.archive }} \
+            --output=`pwd`/artichoke-nightly-source.${{ matrix.archive }} \
             ${{ steps.release_info.outputs.commit }}
 
       - name: Install Python dependencies
