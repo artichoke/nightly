@@ -168,13 +168,25 @@ jobs:
           # constants like `RUBY_REVISION` by walking the git history.
           fetch-depth: 0
 
+      - name: Setup Python
+        uses: actions/setup-python@v4.6.1
+        with:
+          python-version: "3.11"
+
       - name: Set Artichoke Rust toolchain version
-        shell: bash
         id: rust_toolchain
         working-directory: artichoke
+        shell: python
         run: |
-          echo "Rust toolchain version: $(cat rust-toolchain)"
-          echo "version=$(cat rust-toolchain)" >> $GITHUB_OUTPUT
+          import os
+          import tomllib
+
+          with open("rust-toolchain.toml", "rb") as f:
+              data = tomllib.load(f)
+          toolchain = data["toolchain"]["channel"]
+          print(f"Rust toolchain version: {toolchain}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              print(f"version={toolchain}", file=f)
 
       - name: Install Rust toolchain
         uses: artichoke/setup-rust/build-and-test@v1.9.0
