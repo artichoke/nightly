@@ -422,7 +422,7 @@ jobs:
         run: |
           git -C artichoke archive \
             --format ${{ matrix.archive }} \
-            --output=`pwd`/artichoke-nightly-source.${{ matrix.archive }} \
+            --output=`pwd`/artichoke-nightly.source.${{ matrix.archive }} \
             ${{ steps.release_info.outputs.commit }}
 
       - name: Install Python dependencies
@@ -437,10 +437,10 @@ jobs:
         id: build
         run: |
           if [ "${{ matrix.archive }}" = "zip" ]; then
-            echo "asset=artichoke-nightly-source.zip" >> $GITHUB_OUTPUT
+            echo "asset=artichoke-nightly.source.zip" >> $GITHUB_OUTPUT
             echo "content_type=application/zip" >> $GITHUB_OUTPUT
           else
-            echo "asset=artichoke-nightly-source.tar.gz" >> $GITHUB_OUTPUT
+            echo "asset=artichoke-nightly.source.tar.gz" >> $GITHUB_OUTPUT
             echo "content_type=application/gzip" >> $GITHUB_OUTPUT
           fi
 
