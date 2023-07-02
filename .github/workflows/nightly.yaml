@@ -243,7 +243,7 @@ jobs:
         run: |
           python3 -m venv --upgrade-deps venv
           ./venv/bin/pip install --upgrade pip wheel
-          ./venv/bin/pip install -r requirements.txt
+          ./venv/bin/pip install --require-hashes -r requirements.txt
 
       # This will codesign binaries in place which means that the tarballed
       # binaries will be codesigned as well.
@@ -431,7 +431,7 @@ jobs:
         run: |
           python3 -m venv --upgrade-deps venv
           ./venv/bin/pip install --upgrade pip wheel
-          ./venv/bin/pip install -r requirements.txt
+          ./venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Build archive
         shell: bash

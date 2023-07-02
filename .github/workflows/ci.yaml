@@ -24,7 +24,7 @@ jobs:
         run: |
           python3 -m venv --upgrade-deps venv
           venv/bin/pip install --upgrade pip wheel
-          venv/bin/pip install -r requirements.txt
+          venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
         uses: actions/checkout@v3.5.2
@@ -78,7 +78,7 @@ jobs:
         run: |
           python3 -m venv --upgrade-deps venv
           venv/bin/pip install --upgrade pip wheel
-          venv/bin/pip install -r requirements.txt
+          venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
         uses: actions/checkout@v3.5.2
@@ -129,7 +129,7 @@ jobs:
         run: |
           python3 -m venv --upgrade-deps venv
           venv/bin/pip install --upgrade pip wheel
-          venv/bin/pip install -r requirements.txt
+          venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Run black
         run: venv/bin/black --check --diff --verbose .

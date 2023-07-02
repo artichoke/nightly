@@ -80,8 +80,8 @@ namespace :venv do
     next if File.exist?('venv/bin/black') && File.exist?('venv/bin/mypy') && File.exist?('venv/bin/ruff')
 
     sh 'python3 -m venv --upgrade-deps venv'
-    sh 'venv/bin/pip install wheel pip-tools'
-    sh 'venv/bin/pip install -Ur requirements.txt'
+    sh 'venv/bin/pip install --upgrade wheel pip-tools'
+    sh 'venv/bin/pip install --require-hashes --upgrade -r requirements.txt'
   end
 
   desc 'Remove the venv'
