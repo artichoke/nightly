@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       - name: Setup Python
         uses: actions/setup-python@v4.6.1
@@ -27,7 +27,7 @@ jobs:
           venv/bin/pip install -r requirements.txt
 
       - name: Clone Artichoke
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -69,7 +69,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       - name: Setup Python
         uses: actions/setup-python@v4.6.1
@@ -81,7 +81,7 @@ jobs:
           venv/bin/pip install -r requirements.txt
 
       - name: Clone Artichoke
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -120,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       - name: Setup Python
         uses: actions/setup-python@v4.6.1
@@ -145,10 +145,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@8a45918450651f5e4784b6031db26f4b9f76b251 # v1.150.0
+        uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
         with:
           ruby-version: ".ruby-version"
           bundler-cache: true
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       - name: Format with prettier
         run: npx prettier --check '**/*'
