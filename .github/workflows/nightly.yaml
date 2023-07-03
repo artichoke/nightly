@@ -149,7 +149,7 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@v1.10.0
+        uses: artichoke/generate_third_party@v1.11.0
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
@@ -189,7 +189,7 @@ jobs:
               print(f"version={toolchain}", file=f)
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v1.9.0
+        uses: artichoke/setup-rust/build-and-test@v1.10.0
         with:
           toolchain: ${{ steps.rust_toolchain.outputs.version }}
           target: ${{ matrix.target }}
