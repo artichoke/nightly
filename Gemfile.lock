@@ -16,7 +16,7 @@ GEM
     rake (13.0.6)
     regexp_parser (2.8.1)
     rexml (3.2.5)
-    rubocop (1.53.1)
+    rubocop (1.54.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
@@ -41,7 +41,7 @@ PLATFORMS
 DEPENDENCIES
   bundler-audit (~> 0.9)
   rake (>= 12.3.3)
-  rubocop (~> 1.53)
+  rubocop (~> 1.54)
   rubocop-rake (~> 0.6)
 
 BUNDLED WITH

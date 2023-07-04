@@ -1,4 +1,4 @@
 black==23.3.0
 mypy==1.4.1
-ruff==0.0.275
+ruff==0.0.276
 validators==0.20.0
