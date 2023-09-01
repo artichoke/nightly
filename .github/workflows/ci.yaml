@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Setup Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4.7.0
 
       - name: Install Python dependencies
         run: |
@@ -27,7 +27,7 @@ jobs:
           venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -69,10 +69,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Setup Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4.7.0
 
       - name: Install Python dependencies
         run: |
@@ -81,7 +81,7 @@ jobs:
           venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -120,10 +120,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Setup Python
-        uses: actions/setup-python@v4.6.1
+        uses: actions/setup-python@v4.7.0
 
       - name: Install Python dependencies
         run: |
@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Ruby toolchain
         uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Format with prettier
         run: npx prettier --check '**/*'
