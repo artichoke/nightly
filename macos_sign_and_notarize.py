@@ -385,6 +385,7 @@ def delete_keychain() -> None:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            check=False,
         )
         for line in proc.stdout.splitlines():
             print(line)
