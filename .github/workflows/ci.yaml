@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Setup Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
 
       - name: Install Python dependencies
         run: |
@@ -27,7 +27,7 @@ jobs:
           venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -69,10 +69,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Setup Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
 
       - name: Install Python dependencies
         run: |
@@ -81,7 +81,7 @@ jobs:
           venv/bin/pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -120,10 +120,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Setup Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
 
       - name: Install Python dependencies
         run: |
@@ -145,10 +145,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@52b8784594ec115fd17094752708121dc5dabb47 # v1.154.0
+        uses: ruby/setup-ruby@8575951200e472d5f2d95c625da0c7bec8217c42 # v1.161.0
         with:
           ruby-version: ".ruby-version"
           bundler-cache: true
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Format with prettier
         run: npx prettier --check '**/*'
