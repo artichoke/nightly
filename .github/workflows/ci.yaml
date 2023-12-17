@@ -163,7 +163,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.1
 
-      - name: Format with prettier
+      - name: Install toolchain
+        run: npm ci
+
+      - name: Lint and check formatting with prettier
         run: npx prettier --check '**/*'
 
       - name: Lint YAML sources with yamllint
