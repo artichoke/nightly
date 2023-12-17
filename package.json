@@ -1,0 +1,39 @@
+{
+  "name": "@artichokeruby/nightly",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Artichoke nightly builds",
+  "keywords": [
+    "programming language",
+    "scripting",
+    "ruby",
+    "rust",
+    "wasm"
+  ],
+  "homepage": "https://github.com/artichoke/nightly/releases/latest",
+  "bugs": "https://github.com/artichoke/nightly/issues",
+  "license": "MIT",
+  "author": "Ryan Lopopolo <rjl@hyperbo.la> (https://hyperbo.la/)",
+  "contributors": [
+    "Ryan Lopopolo <rjl@hyperbo.la> (https://hyperbo.la/)"
+  ],
+  "repository": "github:artichoke/nightly",
+  "devDependencies": {
+    "prettier": "^3.1.1"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "commonjs": true,
+      "es6": true,
+      "node": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2020,
+      "sourceType": "module"
+    }
+  },
+  "scripts": {
+    "fmt": "prettier --write \"**/*\""
+  }
+}

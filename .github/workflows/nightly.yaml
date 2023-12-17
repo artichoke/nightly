@@ -43,7 +43,7 @@ jobs:
           echo "tag=${release_tag}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -124,7 +124,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Get release download URL
         uses: actions/download-artifact@v3.0.2
@@ -157,7 +157,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
         with:
           python-version: "3.11"
 
@@ -189,13 +189,13 @@ jobs:
               print(f"version={toolchain}", file=f)
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v1.10.0
+        uses: artichoke/setup-rust/build-and-test@v1.11.0
         with:
           toolchain: ${{ steps.rust_toolchain.outputs.version }}
           target: ${{ matrix.target }}
 
       - name: Setup Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
@@ -363,7 +363,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Get release download URL
         uses: actions/download-artifact@v3.0.2
@@ -388,14 +388,14 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: artichoke/artichoke
           path: artichoke
           ref: ${{ steps.release_info.outputs.commit }}
 
       - name: Setup Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
