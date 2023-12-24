@@ -163,6 +163,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.1
 
+      - name: Setup Node.js runtime
+        uses: actions/setup-node@v4.0.1
+        with:
+          node-version: "lts/*"
+
       - name: Install toolchain
         run: npm ci
 
