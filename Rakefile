@@ -80,8 +80,8 @@ namespace :venv do
     next if File.exist?('venv/bin/black') && File.exist?('venv/bin/mypy') && File.exist?('venv/bin/ruff')
 
     sh 'python3 -m venv --upgrade-deps venv'
-    sh 'venv/bin/pip install --upgrade wheel pip-tools'
-    sh 'venv/bin/pip install --require-hashes --upgrade -r requirements.txt'
+    sh 'venv/bin/python3 -m pip install --upgrade wheel pip-tools'
+    sh 'venv/bin/python3 -m pip install --require-hashes --upgrade -r requirements.txt -r dev-requirements.txt'
   end
 
   desc 'Remove the venv'
@@ -92,6 +92,8 @@ namespace :venv do
   desc 'Pin dependencies to requirements.txt'
   task :pin do
     FileUtils.remove_file('requirements.txt', true)
-    sh 'venv/bin/pip-compile --generate-hashes --resolver=backtracking requirements.in'
+    FileUtils.remove_file('dev-requirements.txt', true)
+    sh 'venv/bin/python3 -m piptools compile --generate-hashes --output-file requirements.txt pyproject.toml'
+    sh 'venv/bin/python3 -m piptools compile --generate-hashes --output-file dev-requirements.txt --extra dev pyproject.toml'
   end
 end
