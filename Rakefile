@@ -81,7 +81,7 @@ namespace :venv do
 
     sh 'python3 -m venv --upgrade-deps venv'
     sh 'venv/bin/python3 -m pip install --upgrade wheel pip-tools'
-    sh 'venv/bin/python3 -m pip install --require-hashes --upgrade -r requirements.txt'
+    sh 'venv/bin/python3 -m pip install --require-hashes --upgrade -r requirements.txt -r dev-requirements.txt'
   end
 
   desc 'Remove the venv'
