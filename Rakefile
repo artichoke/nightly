@@ -92,6 +92,8 @@ namespace :venv do
   desc 'Pin dependencies to requirements.txt'
   task :pin do
     FileUtils.remove_file('requirements.txt', true)
+    FileUtils.remove_file('dev-requirements.txt', true)
     sh 'venv/bin/python3 -m piptools compile --generate-hashes --output-file requirements.txt pyproject.toml'
+    sh 'venv/bin/python3 -m piptools compile --generate-hashes --output-file dev-requirements.txt --extra dev pyproject.toml'
   end
 end
