@@ -114,6 +114,8 @@ def run_command_with_merged_output(command: list[str], *, max_retries: int = 3) 
                 raise e from None
             attempt += 1
             print(f"retrying command [{cmd_string}]")
+        else:
+            break
 
     for line in proc.stdout.splitlines():
         if line:
