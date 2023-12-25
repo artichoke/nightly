@@ -104,9 +104,16 @@ def run_command_with_merged_output(command: list[str], *, max_retries: int = 3) 
                 text=True,
             )
         except subprocess.CalledProcessError as e:
+            cmd_string = " ".join(command)
+            print(f"command [{cmd_string}] failed attempt #{attempt}")
             if attempt == max_retries:
+                print(
+                    f"command [{cmd_string}] exceeded {max_retries} max retry attempts."
+                    " failing permanently"
+                )
                 raise e from None
             attempt += 1
+            print(f"retrying command [{cmd_string}]")
 
     for line in proc.stdout.splitlines():
         if line:
