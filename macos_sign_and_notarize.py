@@ -81,10 +81,11 @@ def run_notarytool(
     raise NotaryToolException(" ".join(command))
 
 
-def run_command_with_merged_output(command: list[str]) -> None:
+def run_command_with_merged_output(command: list[str], *, max_retries: int = 3) -> None:
     """
     Run the given command as a subprocess and merge its stdout and stderr
-    streams.
+    streams. The command will retry the command on any error, up to `max_retries`
+    times.
 
     This is useful for funnelling all output of a command into a GitHub Actions
     log group.
@@ -92,13 +93,30 @@ def run_command_with_merged_output(command: list[str]) -> None:
     This command uses `check=True` when delegating to `subprocess`.
     """
 
-    proc = subprocess.run(
-        command,
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    attempt = 1
+    while attempt <= max_retries:
+        try:
+            proc = subprocess.run(
+                command,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+        except subprocess.CalledProcessError as e:
+            cmd_string = " ".join(command)
+            print(f"command [{cmd_string}] failed attempt #{attempt}")
+            if attempt == max_retries:
+                print(
+                    f"command [{cmd_string}] exceeded {max_retries} max retry attempts."
+                    " failing permanently"
+                )
+                raise e from None
+            attempt += 1
+            print(f"retrying command [{cmd_string}]")
+        else:
+            break
+
     for line in proc.stdout.splitlines():
         if line:
             print(line)
