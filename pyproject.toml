@@ -17,7 +17,7 @@ dev = [
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py312']
 include = '\.pyi?$'
 
 [tool.isort]
@@ -27,7 +27,7 @@ line_length = 88
 skip_gitignore = true
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 show_error_codes = true
 pretty = true
@@ -41,31 +41,6 @@ module = ["validators.*"]
 ignore_missing_imports = true
 
 [tool.ruff]
-select = [
-  "E",
-  "F",
-  "I",
-  "UP",
-  "YTT",
-  "ANN",
-  "S",
-  "BLE",
-  "FBT",
-  "B",
-  "C4",
-  "T10",
-  "ISC",
-  "ICN",
-  "RET",
-  "SIM",
-  "ARG",
-  "ERA",
-  "PLC",
-  "PLE",
-  "PLR",
-  "PLW",
-  "PIE",
-  "RUF",
-]
-
-ignore = ["S603", "UP007"]
+target-version = "py312"
+select = ["ALL"]
+ignore = ["COM812", "D", "EM", "S603", "T201", "TRY003", "UP007"]

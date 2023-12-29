@@ -23,6 +23,8 @@ import validators
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.5.0"
 
+MACOS_MONTEREY_MAJOR_VERSION = 12
+
 
 @dataclass(frozen=True, kw_only=True)
 class Args:
@@ -32,8 +34,25 @@ class Args:
     release: str
 
 
-class NotaryToolException(Exception):
+class NotaryToolError(Exception):
     pass
+
+
+class MissingNotarizePasswordError(Exception):
+    def __init__(self: "MissingNotarizePasswordError") -> None:
+        super().__init__("MACOS_NOTARIZE_APP_PASSWORD environment variable is required")
+
+
+class MissingCodeSigningCertificateError(Exception):
+    def __init__(self: "MissingCodeSigningCertificateError") -> None:
+        super().__init__("MACOS_CERTIFICATE environment variable is required")
+
+
+class MissingCodeSigningCertificatePassphraseError(Exception):
+    def __init__(self: "MissingCodeSigningCertificatePassphraseError") -> None:
+        super().__init__(
+            "MACOS_CERTIFICATE_PASSPHRASE environment variable is required"
+        )
 
 
 def run_notarytool(
@@ -78,7 +97,7 @@ def run_notarytool(
 
         attempt += 1
 
-    raise NotaryToolException(" ".join(command))
+    raise NotaryToolError(" ".join(command))
 
 
 def run_command_with_merged_output(command: list[str], *, max_retries: int = 3) -> None:
@@ -131,7 +150,7 @@ def set_output(*, name: str, value: str) -> None:
     """
 
     if github_output := os.getenv("GITHUB_OUTPUT"):
-        with open(github_output, "a") as out:
+        with Path(github_output).open("a") as out:
             print(f"{name}={value}", file=out)
 
 
@@ -183,8 +202,6 @@ def get_image_size(image: Path) -> int:
     This method is influenced by `create-dmg`:
     https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg#L306-L315
     """
-
-    MACOS_MONTEREY_MAJOR_VERSION = 12
 
     proc = subprocess.run(
         ["/usr/bin/sw_vers", "-productVersion"],
@@ -289,7 +306,7 @@ def notarization_app_specific_password() -> str:
 
     if app_specific_password := os.getenv("MACOS_NOTARIZE_APP_PASSWORD"):
         return app_specific_password
-    raise Exception("MACOS_NOTARIZE_APP_PASSWORD environment variable is required")
+    raise MissingNotarizePasswordError
 
 
 def notarization_team_id() -> str:
@@ -491,18 +508,16 @@ def import_codesigning_certificate() -> None:
     with log_group("Import codesigning certificate"):
         encoded_certificate = os.getenv("MACOS_CERTIFICATE")
         if not encoded_certificate:
-            raise Exception("MACOS_CERTIFICATE environment variable is required")
+            raise MissingCodeSigningCertificateError
 
         try:
             certificate = base64.b64decode(encoded_certificate, validate=True)
         except binascii.Error as exc:
-            raise Exception("MACOS_CERTIFICATE must be base64 encoded") from exc
+            raise MissingCodeSigningCertificateError from exc
 
         certificate_password = os.getenv("MACOS_CERTIFICATE_PASSPHRASE")
         if not certificate_password:
-            raise Exception(
-                "MACOS_CERTIFICATE_PASSPHRASE environment variable is required"
-            )
+            raise MissingCodeSigningCertificatePassphraseError
 
         with TemporaryDirectory() as tempdirname:
             cert = Path(tempdirname).joinpath("certificate.p12")
@@ -633,7 +648,7 @@ def create_notarization_bundle(
         dmg.unlink(missing_ok=True)
         with suppress(FileNotFoundError):
             shutil.rmtree(stage)
-        os.makedirs(stage, exist_ok=True)
+        stage.mkdir(parents=True)
 
         for binary in binaries:
             shutil.copy(binary, stage)
@@ -742,7 +757,7 @@ def notarize_bundle(*, bundle: Path) -> None:
                 notarization_request = line.strip().removeprefix("id: ")
 
     if not notarization_request:
-        raise Exception("Notarization request did not return an id on success")
+        raise NotaryToolError("Notarization request did not return an id on success")
 
     # xcrun notarytool log \
     #   2efe2717-52ef-43a5-96dc-0797e4ca1041 \
@@ -916,8 +931,6 @@ def main() -> int:
         validate(bundle=bundle, binary_names=[binary.name for binary in args.binaries])
         set_output(name="asset", value=str(bundle))
         set_output(name="content_type", value="application/x-apple-diskimage")
-
-        return 0
     except subprocess.CalledProcessError as e:
         print("Error: failed to invoke command", file=sys.stderr)
         print(f"    Command: {e.cmd}", file=sys.stderr)
@@ -939,6 +952,8 @@ def main() -> int:
         print(f"Error: {e}", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         return 1
+    else:
+        return 0
     finally:
         # Purge keychain.
         delete_keychain()
