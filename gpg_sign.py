@@ -52,7 +52,7 @@ def set_output(*, name: str, value: str) -> None:
     """
 
     if github_output := os.getenv("GITHUB_OUTPUT"):
-        with open(github_output, "a") as out:
+        with Path(github_output).open("a") as out:
             print(f"{name}={value}", file=out)
 
 
@@ -110,7 +110,7 @@ def gpg_sign_artifact(*, artifact: Path, release_name: str) -> Path:
     with log_group(f"Create GPG signature [{artifact.name}]"):
         with suppress(FileNotFoundError):
             shutil.rmtree(stage)
-        os.makedirs(stage, exist_ok=True)
+        stage.mkdir(parents=True)
 
         asc = stage.joinpath(f"{artifact.name}.asc")
         run_command_with_merged_output(
@@ -194,8 +194,6 @@ def main() -> int:
         validate(artifact=args.artifact, asc=signature)
 
         set_output(name="signature", value=str(signature))
-
-        return 0
     except subprocess.CalledProcessError as e:
         print("Error: failed to invoke command", file=sys.stderr)
         print(f"    Command: {e.cmd}", file=sys.stderr)
@@ -217,6 +215,8 @@ def main() -> int:
         print(f"Error: {e}", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         return 1
+    else:
+        return 0
 
 
 if __name__ == "__main__":
