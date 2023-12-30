@@ -171,7 +171,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: "3.11"
+          python-version-file: ".python-version"
 
       - name: Set Artichoke Rust toolchain version
         id: rust_toolchain
@@ -196,6 +196,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5.0.0
+        with:
+          python-version-file: ".python-version"
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
@@ -396,6 +398,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5.0.0
+        with:
+          python-version-file: ".python-version"
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
