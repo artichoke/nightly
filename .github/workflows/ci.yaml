@@ -19,6 +19,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5.0.0
+        with:
+          python-version-file: ".python-version"
 
       - name: Install Python dependencies
         run: |
@@ -73,6 +75,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5.0.0
+        with:
+          python-version-file: ".python-version"
 
       - name: Install Python dependencies
         run: |
@@ -124,6 +128,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5.0.0
+        with:
+          python-version-file: ".python-version"
 
       - name: Install Python dependencies
         run: |
