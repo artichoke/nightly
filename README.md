@@ -88,7 +88,7 @@ Binaries for Apple platforms are codesigned using an Apple Developer ID:
 **Authority**: Developer ID Application: Ryan Lopopolo (VDKP67932G)  
 **Team ID**: VDKP67932G
 
-As of [artichoke/nightly#88], nighly releases include a DMG artifact that is
+As of [artichoke/nightly#88], nightly releases include a DMG artifact that is
 notarized and stapled.
 
 [artichoke/nightly#88]: https://github.com/artichoke/nightly/pull/88
