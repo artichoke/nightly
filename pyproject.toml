@@ -4,6 +4,7 @@ version = "0"
 license = {file = "LICENSE"}
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
+  "stamina==24.1.0",
   "validators==0.22.0",
 ]
 requires-python = ">= 3.12"

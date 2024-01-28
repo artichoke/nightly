@@ -98,6 +98,14 @@ ruff==0.1.9 \
     --hash=sha256:e6837202c2859b9f22e43cb01992373c2dbfeae5c0c91ad691a4a2e725392464 \
     --hash=sha256:e6a212f436122ac73df851f0cf006e0c6612fe6f9c864ed17ebefce0eff6a5fd
     # via artichoke-nightly (pyproject.toml)
+stamina==24.1.0 \
+    --hash=sha256:0382013a3072c9db02f18240d36d6212e590643a45a8662cabc4584c5d1a8919 \
+    --hash=sha256:de14695610e4ea8da0624fc368607e95d923b25bfe45f4eaa10e226360bc9e02
+    # via artichoke-nightly (pyproject.toml)
+tenacity==8.2.3 \
+    --hash=sha256:5398ef0d78e63f40007c1fb4c0bff96e1911394d2fa8d194f77619c05ff6cc8a \
+    --hash=sha256:ce510e327a630c9e1beaf17d42e6ffacc88185044ad85cf74c0a8887c6a0f88c
+    # via stamina
 typing-extensions==4.9.0 \
     --hash=sha256:23478f88c37f27d76ac8aee6c905017a143b0b1b886c3c9f66bc2fd94f9f5783 \
     --hash=sha256:af72aea155e91adfc61c3ae9e0e342dbc0cba726d6cba4b6c72c1f34e47291cd
