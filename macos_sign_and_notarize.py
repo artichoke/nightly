@@ -19,9 +19,10 @@ from time import sleep
 from typing import Optional
 from urllib.request import urlopen
 
+import stamina
 import validators
 
-MACOS_SIGN_AND_NOTARIZE_VERSION = "0.5.0"
+MACOS_SIGN_AND_NOTARIZE_VERSION = "0.6.0"
 
 MACOS_MONTEREY_MAJOR_VERSION = 12
 
@@ -35,6 +36,10 @@ class Args:
 
 
 class NotaryToolError(Exception):
+    pass
+
+
+class NotaryToolInternalServerError(NotaryToolError):
     pass
 
 
@@ -55,8 +60,9 @@ class MissingCodeSigningCertificatePassphraseError(Exception):
         )
 
 
+@stamina.retry(on=NotaryToolInternalServerError, attempts=3)
 def run_notarytool(
-    command: list[str], *, retries: int = 3, backoff_s: float = 5.0
+    command: list[str]
 ) -> str:
     """
     Run the given notarytool command as a subprocess and return its stdout
@@ -73,37 +79,31 @@ def run_notarytool(
             "run_notarytool requires `/usr/bin/xcrun notarytool` command prefix"
         )
 
-    attempt = 0
-    while attempt < retries:
-        proc = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if proc.stderr:
-            print(proc.stderr, file=sys.stderr)
+    proc = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.stderr:
+        print(proc.stderr, file=sys.stderr)
 
-        if proc.returncode == 0:
-            return proc.stdout
+    if proc.returncode == 0:
+        return proc.stdout
 
-        # Sometimes, the API that backs `notarytool` returns 500 errors. Try to
-        # inspect stderr for known 500s and retry with exponential backoff.
-        #
-        # See: https://github.com/artichoke/nightly/issues/129
-        if "Error: HTTP status code: 500. Internal Server Error" in proc.stderr:
-            sleep(backoff_s)
-            backoff_s *= 1.5
-
-        attempt += 1
-
-    raise NotaryToolError(" ".join(command))
+    # Sometimes, the API that backs `notarytool` returns 500 errors. Try to
+    # inspect stderr for known 500s and retry with exponential backoff.
+    #
+    # See: https://github.com/artichoke/nightly/issues/129
+    if "Error: HTTP status code: 500. Internal Server Error" in proc.stderr:
+        raise NotaryToolInternalServerError(proc.stderr)
 
 
-def run_command_with_merged_output(command: list[str], *, max_retries: int = 3) -> None:
+@stamina.retry(on=subprocess.CalledProcessError, attempts=3)
+def run_command_with_merged_output(command: list[str]) -> None:
     """
     Run the given command as a subprocess and merge its stdout and stderr
-    streams. The command will retry the command on any error, up to `max_retries`
+    streams. The command will retry the command on any error, up to 3
     times.
 
     This is useful for funnelling all output of a command into a GitHub Actions
@@ -112,29 +112,13 @@ def run_command_with_merged_output(command: list[str], *, max_retries: int = 3) 
     This command uses `check=True` when delegating to `subprocess`.
     """
 
-    attempt = 1
-    while attempt <= max_retries:
-        try:
-            proc = subprocess.run(
-                command,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-        except subprocess.CalledProcessError as e:
-            cmd_string = " ".join(command)
-            print(f"command [{cmd_string}] failed attempt #{attempt}")
-            if attempt == max_retries:
-                print(
-                    f"command [{cmd_string}] exceeded {max_retries} max retry attempts."
-                    " failing permanently"
-                )
-                raise e from None
-            attempt += 1
-            print(f"retrying command [{cmd_string}]")
-        else:
-            break
+    proc = subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
 
     for line in proc.stdout.splitlines():
         if line:
