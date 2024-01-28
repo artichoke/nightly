@@ -15,7 +15,6 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from time import sleep
 from typing import Optional
 from urllib.request import urlopen
 
@@ -61,9 +60,7 @@ class MissingCodeSigningCertificatePassphraseError(Exception):
 
 
 @stamina.retry(on=NotaryToolInternalServerError, attempts=3)
-def run_notarytool(
-    command: list[str]
-) -> str:
+def run_notarytool(command: list[str]) -> str:
     """
     Run the given notarytool command as a subprocess and return its stdout
     contents on success.
