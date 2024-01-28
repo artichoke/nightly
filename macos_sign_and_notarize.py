@@ -95,6 +95,8 @@ def run_notarytool(command: list[str]) -> str:
     if "Error: HTTP status code: 500. Internal Server Error" in proc.stderr:
         raise NotaryToolInternalServerError(proc.stderr)
 
+    raise NotaryToolError(" ".join(command))
+
 
 @stamina.retry(on=subprocess.CalledProcessError, attempts=3)
 def run_command_with_merged_output(command: list[str]) -> None:
