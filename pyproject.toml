@@ -4,16 +4,16 @@ version = "0"
 license = {file = "LICENSE"}
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
-  "stamina==24.1.0",
+  "stamina==24.2.0",
   "validators==0.22.0",
 ]
 requires-python = ">= 3.12"
 
 [project.optional-dependencies]
 dev = [
-  "black==23.12.1",
+  "black==24.1.1",
   "mypy==1.8.0",
-  "ruff==0.1.9",
+  "ruff==0.1.15",
 ]
 
 [tool.black]
