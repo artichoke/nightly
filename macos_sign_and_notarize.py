@@ -594,9 +594,10 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
             print("Invalid DMG icns asset URL, skipping")
             return
 
-        with urlopen(url, data=None, timeout=3) as remote, icns.open(  # noqa: S310
-            "wb"
-        ) as out:
+        with (
+            urlopen(url, data=None, timeout=3) as remote,  # noqa: S310
+            icns.open("wb") as out,
+        ):
             print("Copying remote icns file to DMG archive")
             shutil.copyfileobj(remote, out)
 
