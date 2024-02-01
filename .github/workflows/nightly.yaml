@@ -80,7 +80,7 @@ jobs:
         run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4.0.0
+        uses: actions/upload-artifact@v4.3.0
         with:
           name: artifacts
           path: artifacts
@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v4.1.1
 
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@v4.1.1
         with:
           name: artifacts
           path: artifacts
@@ -149,7 +149,7 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@v1.11.0
+        uses: artichoke/generate_third_party@v1.12.1
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
@@ -368,7 +368,7 @@ jobs:
         uses: actions/checkout@v4.1.1
 
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@v4.1.1
         with:
           name: artifacts
           path: artifacts
@@ -485,7 +485,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@v4.1.1
         with:
           name: artifacts
           path: artifacts
