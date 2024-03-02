@@ -141,7 +141,7 @@ jobs:
         run: venv/bin/black --check --diff --verbose .
 
       - name: Run ruff
-        run: venv/bin/ruff --output-format=github .
+        run: venv/bin/ruff check --output-format=github .
 
       - name: Run mypy
         run: venv/bin/mypy .

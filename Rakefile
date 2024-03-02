@@ -17,7 +17,7 @@ namespace :lint do
   desc 'Lint Python files with ruff'
   task python: :'venv:create' do
     sh 'venv/bin/mypy .'
-    sh 'venv/bin/ruff .'
+    sh 'venv/bin/ruff check .'
   end
 end
 
@@ -28,7 +28,7 @@ namespace :format do
   desc 'Format Python files with black and ruff'
   task python: :'venv:create' do
     sh 'venv/bin/black .'
-    sh 'venv/bin/ruff --fix .'
+    sh 'venv/bin/ruff check --fix .'
   end
 
   desc 'Format text, YAML, and Markdown sources with prettier'
@@ -44,7 +44,7 @@ namespace :fmt do
   desc 'Format Python files with black and ruff'
   task python: :'venv:create' do
     sh 'venv/bin/black .'
-    sh 'venv/bin/ruff --fix .'
+    sh 'venv/bin/ruff check --fix .'
   end
 
   desc 'Format text, YAML, and Markdown sources with prettier'
