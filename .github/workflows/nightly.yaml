@@ -43,7 +43,7 @@ jobs:
           echo "tag=${release_tag}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.4
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -80,7 +80,7 @@ jobs:
         run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4.3.1
+        uses: actions/upload-artifact@v4.3.3
         with:
           name: artifacts
           path: artifacts
@@ -124,10 +124,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.4
 
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: artifacts
           path: artifacts
@@ -157,7 +157,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.4
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.1.0
         with:
           python-version-file: ".python-version"
 
@@ -195,7 +195,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.1.0
         with:
           python-version-file: ".python-version"
 
@@ -365,10 +365,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.4
 
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: artifacts
           path: artifacts
@@ -390,14 +390,14 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.4
         with:
           repository: artichoke/artichoke
           path: artichoke
           ref: ${{ steps.release_info.outputs.commit }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.1.0
         with:
           python-version-file: ".python-version"
 
@@ -485,7 +485,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: artifacts
           path: artifacts
