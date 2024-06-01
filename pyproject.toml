@@ -5,7 +5,7 @@ license = {file = "LICENSE"}
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   "stamina==24.2.0",
-  "validators==0.28.1",
+  "validators==0.28.3",
 ]
 requires-python = ">= 3.12"
 
@@ -13,7 +13,7 @@ requires-python = ">= 3.12"
 dev = [
   "black==24.4.2",
   "mypy==1.10.0",
-  "ruff==0.4.2",
+  "ruff==0.4.7",
 ]
 
 [tool.black]
