@@ -253,7 +253,7 @@ jobs:
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          ./venv/bin/python3 macos_sign_and_notarize.py "artichoke-nightly-${{ matrix.target }}" \
+          ./venv/bin/python3 src/macos_sign_and_notarize.py "artichoke-nightly-${{ matrix.target }}" \
             --binary "artichoke/target/${{ matrix.target }}/release/artichoke" \
             --binary "artichoke/target/${{ matrix.target }}/release/airb" \
             --resource artichoke/LICENSE \
@@ -269,7 +269,7 @@ jobs:
         id: apple_codesigning_gpg
         if: runner.os == 'macOS'
         run: |
-          python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" \
+          python3 src/gpg_sign.py "artichoke-nightly-${{ matrix.target }}" \
             --artifact "${{ steps.apple_codesigning.outputs.asset }}"
 
       - name: Upload release archive
@@ -323,7 +323,7 @@ jobs:
 
       - name: GPG sign archive
         id: gpg_signing
-        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
+        run: python3 src/gpg_sign.py "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
@@ -451,7 +451,7 @@ jobs:
 
       - name: GPG sign archive
         id: gpg_signing
-        run: python3 gpg_sign.py "artichoke-nightly-${{ matrix.archive }}" --artifact "${{ steps.build.outputs.asset }}"
+        run: python3 src/gpg_sign.py "artichoke-nightly-${{ matrix.archive }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0

@@ -61,7 +61,7 @@ jobs:
 
       - name: GPG sign binary
         id: gpg_signing
-        run: venv/bin/python3 gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
+        run: venv/bin/python3 src/gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
 
       - name: Verify GPG signature
         run: gpg --batch --verify "${{ steps.gpg_signing.outputs.signature }}" artichoke/target/release/artichoke
@@ -100,7 +100,7 @@ jobs:
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          venv/bin/python3 macos_sign_and_notarize.py "nightly-apple-codesign-test" \
+          venv/bin/python3 src/macos_sign_and_notarize.py "nightly-apple-codesign-test" \
             --binary "artichoke/target/release/artichoke" \
             --binary "artichoke/target/release/airb" \
             --resource artichoke/LICENSE \
