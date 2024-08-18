@@ -678,11 +678,13 @@ def create_disk_image(stage: Path, release_name: str) -> tuple[Path, Path]:
     This method is influenced by `create-dmg`: https://github.com/create-dmg/create-dmg
 
     Args:
-        stage (Path): The directory containing binaries and resources to include in the image.
+        stage (Path): The directory containing binaries and resources to include
+                      in the image.
         release_name (str): The name of the release.
 
     Returns:
-        tuple[Path, Path]: The paths to the writable disk image and the final disk image.
+        tuple[Path, Path]: The paths to the writable disk image and the final
+                           disk image.
     """
     dmg_writable = Path("dist").joinpath(f"{release_name}-temp.dmg")
     dmg = Path("dist").joinpath(f"{release_name}.dmg")
