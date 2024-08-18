@@ -8,11 +8,11 @@ stamina==24.2.0 \
     --hash=sha256:4dbd8076d2cb4e228046833e4507af3406cc31b9b6046e8a6729ffde934b2526 \
     --hash=sha256:8db72126f2342e428b153cbcf837f8a90f89b783aa55e19d4a17193116ee35ee
     # via artichoke-nightly (pyproject.toml)
-tenacity==8.4.2 \
-    --hash=sha256:9e6f7cf7da729125c7437222f8a522279751cdfbe6b67bfe64f75d3a348661b2 \
-    --hash=sha256:cd80a53a79336edba8489e767f729e4f391c896956b57140b5d7511a64bbd3ef
+tenacity==9.0.0 \
+    --hash=sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b \
+    --hash=sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539
     # via stamina
-validators==0.28.3 \
-    --hash=sha256:53cafa854f13850156259d9cc479b864ee901f6a96e6b109e6fc33f98f37d99f \
-    --hash=sha256:c6c79840bcde9ba77b19f6218f7738188115e27830cbaff43264bc4ed24c429d
+validators==0.33.0 \
+    --hash=sha256:134b586a98894f8139865953899fc2daeb3d0c35569552c5518f089ae43ed075 \
+    --hash=sha256:535867e9617f0100e676a1257ba1e206b9bfd847ddc171e4d44811f07ff0bfbf
     # via artichoke-nightly (pyproject.toml)

@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4.1.7
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v5.1.1
         with:
           python-version-file: ".python-version"
 
@@ -61,7 +61,7 @@ jobs:
 
       - name: GPG sign binary
         id: gpg_signing
-        run: venv/bin/python3 gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
+        run: venv/bin/python3 src/gpg_sign.py "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
 
       - name: Verify GPG signature
         run: gpg --batch --verify "${{ steps.gpg_signing.outputs.signature }}" artichoke/target/release/artichoke
@@ -74,7 +74,7 @@ jobs:
         uses: actions/checkout@v4.1.7
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v5.1.1
         with:
           python-version-file: ".python-version"
 
@@ -100,7 +100,7 @@ jobs:
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          venv/bin/python3 macos_sign_and_notarize.py "nightly-apple-codesign-test" \
+          venv/bin/python3 src/macos_sign_and_notarize.py "nightly-apple-codesign-test" \
             --binary "artichoke/target/release/artichoke" \
             --binary "artichoke/target/release/airb" \
             --resource artichoke/LICENSE \
@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v4.1.7
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v5.1.1
         with:
           python-version-file: ".python-version"
 
@@ -154,7 +154,7 @@ jobs:
         uses: actions/checkout@v4.1.7
 
       - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@1d0e911f615a112e322369596f10ee0b95b010ae # v1.183.0
+        uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
           ruby-version: ".ruby-version"
           bundler-cache: true
@@ -170,7 +170,7 @@ jobs:
         uses: actions/checkout@v4.1.7
 
       - name: Setup Node.js runtime
-        uses: actions/setup-node@v4.0.2
+        uses: actions/setup-node@v4.0.3
         with:
           node-version: "lts/*"
 
