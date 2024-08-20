@@ -182,8 +182,9 @@ def get_image_size(image: Path) -> int:
     """
     Compute the size in megabytes of a disk image.
 
-    This method is influenced by `create-dmg`:
-    https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg#L306-L315
+    This method is influenced by [`create-dmg`].
+
+    [`create-dmg`]: https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg#L306-L315
     """
 
     proc = subprocess.run(
@@ -618,63 +619,134 @@ def create_notarization_bundle(
     Create a disk image with the codesigned binaries to submit to the Apple
     notarization service and prepare for distribution.
 
-    Returns `Path` object to the newly created DMG archive.
+    This method orchestrates the creation of a writable disk image, optionally
+    adds an icon, compresses the image, and then codesigns it.
 
-    This method is influenced by `create-dmg`:
-    https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg
+    Returns:
+        Path: The path to the newly created and signed DMG archive.
     """
+    stage = prepare_stage_directory(release_name)
+    copy_binaries_and_resources(stage, binaries, resources)
+    dmg_writable, dmg = create_disk_image(stage, release_name)
 
+    if dmg_icon_url:
+        add_icon_to_disk_image(dmg_writable, dmg_icon_url)
+
+    compress_disk_image(dmg_writable, dmg)
+    codesign_binary(binary_path=dmg)
+    return dmg
+
+
+def prepare_stage_directory(release_name: str) -> Path:
+    """
+    Prepare the stage directory for the disk image creation process.
+
+    Args:
+        release_name (str): The name of the release, used to name the stage directory.
+
+    Returns:
+        Path: The path to the prepared stage directory.
+    """
     stage = Path("dist").joinpath(release_name)
+    with suppress(FileNotFoundError):
+        shutil.rmtree(stage)
+    stage.mkdir(parents=True)
+    return stage
+
+
+def copy_binaries_and_resources(
+    stage: Path, binaries: list[Path], resources: list[Path]
+) -> None:
+    """
+    Copy binaries and resources into the stage directory.
+
+    Args:
+        stage (Path): The directory where binaries and resources will be copied.
+        binaries (list[Path]): The list of binary files to be copied.
+        resources (list[Path]): The list of resource files to be copied.
+    """
+    for binary in binaries:
+        shutil.copy(binary, stage)
+    for resource in resources:
+        shutil.copy(resource, stage)
+
+
+def create_disk_image(stage: Path, release_name: str) -> tuple[Path, Path]:
+    """
+    Create a writable disk image (.dmg) from the stage directory.
+
+    This method is influenced by `create-dmg`: https://github.com/create-dmg/create-dmg
+
+    Args:
+        stage (Path): The directory containing binaries and resources to include
+                      in the image.
+        release_name (str): The name of the release.
+
+    Returns:
+        tuple[Path, Path]: The paths to the writable disk image and the final
+                           disk image.
+    """
     dmg_writable = Path("dist").joinpath(f"{release_name}-temp.dmg")
     dmg = Path("dist").joinpath(f"{release_name}.dmg")
 
-    with log_group("Create disk image for notarization"):
-        dmg.unlink(missing_ok=True)
-        with suppress(FileNotFoundError):
-            shutil.rmtree(stage)
-        stage.mkdir(parents=True)
+    # notarytool submit works only with UDIF disk images, signed "flat"
+    # installer packages, and zip files.
+    #
+    # Format types:
+    #
+    # UDRW - UDIF read/write image
+    # UDZO - UDIF zlib-compressed image
+    # ULFO - UDIF lzfse-compressed image (OS X 10.11+ only)
+    # ULMO - UDIF lzma-compressed image (macOS 10.15+ only)
+    #
+    # /usr/bin/hdiutil create \
+    #    -volname "Artichoke Ruby nightly" \
+    #    -srcfolder "$release_name" \
+    #    -ov -format UDRW name.dmg
+    run_command_with_merged_output(
+        [
+            "/usr/bin/hdiutil",
+            "create",
+            "-volname",
+            disk_image_volume_name(),
+            "-srcfolder",
+            str(stage),
+            "-ov",
+            "-format",
+            "UDRW",
+            "-verbose",
+            str(dmg_writable),
+        ]
+    )
+    return dmg_writable, dmg
 
-        for binary in binaries:
-            shutil.copy(binary, stage)
-        for resource in resources:
-            shutil.copy(resource, stage)
 
-        # notarytool submit works only with UDIF disk images, signed "flat"
-        # installer packages, and zip files.
-        #
-        # Format types:
-        #
-        # UDRW - UDIF read/write image
-        # UDZO - UDIF zlib-compressed image
-        # ULFO - UDIF lzfse-compressed image (OS X 10.11+ only)
-        # ULMO - UDIF lzma-compressed image (macOS 10.15+ only)
+def add_icon_to_disk_image(dmg_writable: Path, dmg_icon_url: str) -> None:
+    """
+    Add an icon to the disk image by downloading the icon from the specified URL.
 
-        # /usr/bin/hdiutil create \
-        #    -volname "Artichoke Ruby nightly" \
-        #    -srcfolder "$release_name" \
-        #    -ov -format UDRW name.dmg
-        run_command_with_merged_output(
-            [
-                "/usr/bin/hdiutil",
-                "create",
-                "-volname",
-                disk_image_volume_name(),
-                "-srcfolder",
-                str(stage),
-                "-ov",
-                "-format",
-                # Create a read/write image so we can set the DMG icon
-                "UDRW",
-                "-verbose",
-                str(dmg_writable),
-            ]
-        )
+    Args:
+        dmg_writable (Path): The path to the writable disk image.
+        dmg_icon_url (str): The URL to the .icns file to set as the volume icon.
+    """
+    with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
+        setup_dmg_icon(dest=mounted_image, url=dmg_icon_url)
 
-    if dmg_icon_url:
-        with attach_disk_image(dmg_writable, readwrite=True) as mounted_image:
-            setup_dmg_icon(dest=mounted_image, url=dmg_icon_url)
 
+def compress_disk_image(dmg_writable: Path, dmg: Path) -> None:
+    """
+    Compress the writable disk image and remove the temporary writable image.
+
+    This method is influenced by [`create-dmg`].
+
+    Args:
+        dmg_writable (Path): The path to the writable disk image.
+        dmg (Path): The final compressed disk image path.
+
+    [`create-dmg`]: https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg
+    """
     with log_group("Shrink disk image to fit"):
+        # /usr/bin/hdiutil resize -size "$size"m "$temp.dmg"
         run_command_with_merged_output(
             [
                 "/usr/bin/hdiutil",
@@ -686,6 +758,10 @@ def create_notarization_bundle(
         )
 
     with log_group("Compress disk image"):
+        # /usr/bin/hdiutil convert "$temp.dmg" \
+        #   -format UDZO \
+        #   -imagekey zlib-level=9 \
+        #   -o name.dmg
         run_command_with_merged_output(
             [
                 "/usr/bin/hdiutil",
@@ -699,11 +775,7 @@ def create_notarization_bundle(
                 str(dmg),
             ]
         )
-
         dmg_writable.unlink()
-
-    codesign_binary(binary_path=dmg)
-    return dmg
 
 
 def notarize_bundle(*, bundle: Path) -> None:
