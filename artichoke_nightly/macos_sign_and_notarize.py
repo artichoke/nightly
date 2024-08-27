@@ -21,6 +21,9 @@ from urllib.request import urlopen
 import stamina
 import validators
 
+from .github_actions import emit_metadata, log_group, runner_tempdir, set_output
+from .shell_utils import run_command_with_merged_output
+
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.6.0"
 
 MACOS_MONTEREY_MAJOR_VERSION = 12
@@ -98,60 +101,6 @@ def run_notarytool(command: list[str]) -> str:
     raise NotaryToolError(proc.stderr)
 
 
-@stamina.retry(on=subprocess.CalledProcessError, attempts=3)
-def run_command_with_merged_output(command: list[str]) -> None:
-    """
-    Run the given command as a subprocess and merge its stdout and stderr
-    streams. This function will retry the given command on any error, up to 3
-    times.
-
-    This is useful for funnelling all output of a command into a GitHub Actions
-    log group.
-
-    This command uses `check=True` when delegating to `subprocess`.
-    """
-
-    proc = subprocess.run(
-        command,
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-
-    for line in proc.stdout.splitlines():
-        if line:
-            print(line)
-
-
-def set_output(*, name: str, value: str) -> None:
-    """
-    Set an output for a GitHub Actions job.
-
-    https://docs.github.com/en/actions/using-jobs/defining-outputs-for-jobs
-    https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
-    """
-
-    if github_output := os.getenv("GITHUB_OUTPUT"):
-        with Path(github_output).open("a") as out:
-            print(f"{name}={value}", file=out)
-
-
-@contextmanager
-def log_group(group: str) -> Iterator[None]:
-    """
-    Create an expandable log group in GitHub Actions job logs.
-
-    https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#grouping-log-lines
-    """
-
-    print(f"::group::{group}")
-    try:
-        yield
-    finally:
-        print("::endgroup::")
-
-
 @contextmanager
 def attach_disk_image(image: Path, *, readwrite: bool = False) -> Iterator[Path]:
     try:
@@ -215,28 +164,6 @@ def get_image_size(image: Path) -> int:
     return (size * 512 // 1000 // 1000) + 1
 
 
-def emit_metadata() -> None:
-    if os.getenv("CI") != "true":
-        return
-    with log_group("Workflow metadata"):
-        if repository := os.getenv("GITHUB_REPOSITORY"):
-            print(f"GitHub Repository: {repository}")
-        if actor := os.getenv("GITHUB_ACTOR"):
-            print(f"GitHub Actor: {actor}")
-        if workflow := os.getenv("GITHUB_WORKFLOW"):
-            print(f"GitHub Workflow: {workflow}")
-        if job := os.getenv("GITHUB_JOB"):
-            print(f"GitHub Job: {job}")
-        if run_id := os.getenv("GITHUB_RUN_ID"):
-            print(f"GitHub Run ID: {run_id}")
-        if ref := os.getenv("GITHUB_REF"):
-            print(f"GitHub Ref: {ref}")
-        if ref_name := os.getenv("GITHUB_REF_NAME"):
-            print(f"GitHub Ref Name: {ref_name}")
-        if sha := os.getenv("GITHUB_SHA"):
-            print(f"GitHub SHA: {sha}")
-
-
 def keychain_path() -> Path:
     """
     Absolute path to a keychain used for the codesigning and notarization
@@ -249,7 +176,7 @@ def keychain_path() -> Path:
     #
     # `RUNNER_TEMP` is the path to a temporary directory on the runner. This
     # directory is emptied at the beginning and end of each job.
-    if runner_temp := os.getenv("RUNNER_TEMP"):
+    if runner_temp := runner_tempdir():
         return Path(runner_temp).joinpath("notarization.keychain-db")
 
     return Path("notarization.keychain-db").resolve()
