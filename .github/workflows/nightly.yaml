@@ -241,7 +241,6 @@ jobs:
         run: cargo build --verbose --release --target ${{ matrix.target }}
 
       - name: Install Python dependencies
-        if: runner.os == 'macOS'
         run: |
           python3 -m venv --upgrade-deps venv
           venv/bin/python3 -m pip install --upgrade pip wheel
