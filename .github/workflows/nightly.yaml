@@ -450,7 +450,7 @@ jobs:
 
       - name: GPG sign archive
         id: gpg_signing
-        run: python3 src/gpg_sign.py "artichoke-nightly-${{ matrix.archive }}" --artifact "${{ steps.build.outputs.asset }}"
+        run: venv/bin/python3 -m artichoke_nightly.gpg_sign "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
