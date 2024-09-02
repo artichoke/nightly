@@ -91,9 +91,7 @@ namespace :venv do
 
   desc 'Pin dependencies to requirements.txt'
   task :pin do
-    unless File.exist?('venv/bin/pip-compile')
-      Rake::Task['venv:create'].invoke
-    end
+    Rake::Task['venv:create'].invoke unless File.exist?('venv/bin/pip-compile')
 
     FileUtils.remove_file('requirements.txt', true)
     FileUtils.remove_file('dev-requirements.txt', true)
