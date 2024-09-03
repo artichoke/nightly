@@ -80,7 +80,7 @@ jobs:
         run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4.3.4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: artifacts
           path: artifacts
@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.1
+        uses: actions/setup-python@v5.2.0
         with:
           python-version-file: ".python-version"
 
@@ -195,7 +195,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.1
+        uses: actions/setup-python@v5.2.0
         with:
           python-version-file: ".python-version"
 
@@ -396,7 +396,7 @@ jobs:
           ref: ${{ steps.release_info.outputs.commit }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5.1.1
+        uses: actions/setup-python@v5.2.0
         with:
           python-version-file: ".python-version"
 
@@ -450,7 +450,7 @@ jobs:
 
       - name: GPG sign archive
         id: gpg_signing
-        run: python3 src/gpg_sign.py "artichoke-nightly-${{ matrix.archive }}" --artifact "${{ steps.build.outputs.asset }}"
+        run: venv/bin/python3 -m artichoke_nightly.gpg_sign "artichoke-nightly-${{ matrix.target }}" --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
         uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0

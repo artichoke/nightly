@@ -4,9 +4,9 @@
 #
 #    pip-compile --generate-hashes --output-file=requirements.txt pyproject.toml
 #
-stamina==24.2.0 \
-    --hash=sha256:4dbd8076d2cb4e228046833e4507af3406cc31b9b6046e8a6729ffde934b2526 \
-    --hash=sha256:8db72126f2342e428b153cbcf837f8a90f89b783aa55e19d4a17193116ee35ee
+stamina==24.3.0 \
+    --hash=sha256:1d763c98962ca11f1729c357422926a750a138e803e7beb9f9d6c99d33d9997d \
+    --hash=sha256:28caf1a5db514256d86e32b60621630552fa9a60dace4e6fb5c78ba15f26236e
     # via artichoke-nightly (pyproject.toml)
 tenacity==9.0.0 \
     --hash=sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b \
