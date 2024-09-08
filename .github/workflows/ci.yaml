@@ -22,11 +22,21 @@ jobs:
         with:
           python-version-file: ".python-version"
 
+      - name: Set Python executable path based on OS
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "VENV_PYTHON=venv\\Scripts\\python" >> $GITHUB_ENV
+          else
+            echo "VENV_PYTHON=venv/bin/python3" >> $GITHUB_ENV
+          fi
+
       - name: Install Python dependencies
+        shell: bash
         run: |
           python3 -m venv --upgrade-deps venv
-          venv/bin/python3 -m pip install --upgrade pip wheel
-          venv/bin/python3 -m pip install --require-hashes -r requirements.txt
+          $VENV_PYTHON -m pip install --upgrade pip wheel
+          $VENV_PYTHON -m pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
         uses: actions/checkout@v4.1.7
@@ -60,8 +70,12 @@ jobs:
         run: cargo build --verbose --release
 
       - name: GPG sign binary
+        shell: bash
         id: gpg_signing
-        run: venv/bin/python3 -m artichoke_nightly.gpg_sign "nightly-gpg-sign-test" --artifact artichoke/target/release/artichoke
+        run: |
+          $VENV_PYTHON -m artichoke_nightly.gpg_sign \
+            "nightly-gpg-sign-test" \
+            --artifact artichoke/target/release/artichoke
 
       - name: Verify GPG signature
         run: gpg --batch --verify "${{ steps.gpg_signing.outputs.signature }}" artichoke/target/release/artichoke
@@ -78,11 +92,21 @@ jobs:
         with:
           python-version-file: ".python-version"
 
+      - name: Set Python executable path based on OS
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "VENV_PYTHON=venv\\Scripts\\python" >> $GITHUB_ENV
+          else
+            echo "VENV_PYTHON=venv/bin/python3" >> $GITHUB_ENV
+          fi
+
       - name: Install Python dependencies
+        shell: bash
         run: |
           python3 -m venv --upgrade-deps venv
-          venv/bin/python3 -m pip install --upgrade pip wheel
-          venv/bin/python3 -m pip install --require-hashes -r requirements.txt
+          $VENV_PYTHON -m pip install --upgrade pip wheel
+          $VENV_PYTHON -m pip install --require-hashes -r requirements.txt
 
       - name: Clone Artichoke
         uses: actions/checkout@v4.1.7
@@ -97,10 +121,11 @@ jobs:
       # This will codesign binaries in place which means that the tarballed
       # binaries will be codesigned as well.
       - name: Run Apple Codesigning and Notarization
+        shell: bash
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          venv/bin/python3 -m artichoke_nightly.macos_sign_and_notarize "nightly-apple-codesign-test" \
+          $VENV_PYTHON -m artichoke_nightly.macos_sign_and_notarize "nightly-apple-codesign-test" \
             --binary "artichoke/target/release/artichoke" \
             --binary "artichoke/target/release/airb" \
             --resource artichoke/LICENSE \
@@ -131,20 +156,30 @@ jobs:
         with:
           python-version-file: ".python-version"
 
+      - name: Set Python executable path based on OS
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "VENV_PYTHON=venv\\Scripts\\python" >> $GITHUB_ENV
+          else
+            echo "VENV_PYTHON=venv/bin/python3" >> $GITHUB_ENV
+          fi
+
       - name: Install Python dependencies
+        shell: bash
         run: |
           python3 -m venv --upgrade-deps venv
-          venv/bin/python3 -m pip install --upgrade pip wheel
-          venv/bin/python3 -m pip install --require-hashes -r requirements.txt -r dev-requirements.txt
+          $VENV_PYTHON -m pip install --upgrade pip wheel
+          $VENV_PYTHON -m pip install --require-hashes -r dev-requirements.txt
 
       - name: Run black
-        run: venv/bin/black --check --diff --verbose .
+        run: $VENV_PYTHON -m black --check --diff --verbose .
 
       - name: Run ruff
-        run: venv/bin/ruff check --output-format=github .
+        run: $VENV_PYTHON -m ruff check --output-format=github .
 
       - name: Run mypy
-        run: venv/bin/mypy .
+        run: $VENV_PYTHON -m mypy .
 
   ruby:
     name: Lint and format Ruby
