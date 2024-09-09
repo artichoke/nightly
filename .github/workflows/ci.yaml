@@ -61,6 +61,12 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
           fingerprint: 1C4A856ACF86EC1EE841180FAF57A37CAC061452
+          # Set the GPG key to full trust (value 4) to ensure reliable signing
+          # and verification in CI. Full trust balances security and practicality
+          # in automated environments, avoiding prompts or failures that can
+          # occur with marginal trust, while not compromising security like
+          # ultimate trust.
+          trust_level: 4
 
       - name: List keys
         run: gpg -K
