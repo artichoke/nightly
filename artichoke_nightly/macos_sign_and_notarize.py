@@ -21,6 +21,7 @@ from urllib.request import urlopen
 import stamina
 import validators
 
+from .error_reporting import report_subprocess_error
 from .github_actions import emit_metadata, log_group, runner_tempdir, set_output
 from .shell_utils import run_command_with_merged_output
 
@@ -915,21 +916,7 @@ def main() -> int:
         set_output(name="asset", value=str(bundle))
         set_output(name="content_type", value="application/x-apple-diskimage")
     except subprocess.CalledProcessError as e:
-        print("Error: failed to invoke command", file=sys.stderr)
-        print(f"    Command: {e.cmd}", file=sys.stderr)
-        print(f"    Return Code: {e.returncode}", file=sys.stderr)
-        if e.stdout:
-            print()
-            print("Output:", file=sys.stderr)
-            for line in e.stdout.splitlines():
-                print(f"    {line}", file=sys.stderr)
-        if e.stderr:
-            print()
-            print("Error Output:", file=sys.stderr)
-            for line in e.stderr.splitlines():
-                print(f"    {line}", file=sys.stderr)
-        print()
-        print(traceback.format_exc(), file=sys.stderr)
+        report_subprocess_error(e, output=sys.stderr)
         return e.returncode
     except Exception as e:  # noqa: BLE001
         print(f"Error: {e}", file=sys.stderr)
