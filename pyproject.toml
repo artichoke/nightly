@@ -5,15 +5,15 @@ license = {file = "LICENSE"}
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   "stamina==24.3.0",
-  "validators==0.33.0",
+  "validators==0.34.0",
 ]
 requires-python = ">= 3.12"
 
 [project.optional-dependencies]
 dev = [
-  "black==24.8.0",
-  "mypy==1.11.2",
-  "ruff==0.6.3",
+  "black==24.10.0",
+  "mypy==1.13.0",
+  "ruff==0.7.1",
 ]
 
 [build-system]
