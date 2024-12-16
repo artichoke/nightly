@@ -43,7 +43,7 @@ jobs:
           echo "tag=${release_tag}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -80,7 +80,7 @@ jobs:
         run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: artifacts
           path: artifacts
@@ -124,7 +124,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
 
       - name: Get release download URL
         uses: actions/download-artifact@v4.1.8
@@ -157,7 +157,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5.2.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version-file: ".python-version"
 
@@ -215,7 +215,7 @@ jobs:
       # ```
       - name: Import GPG key
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
+        uses: crazy-max/ghaction-import-gpg@cb9bde2e2525e640591a934b1fd28eef1dcaf5e5 # v6.2.0
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
@@ -376,7 +376,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
 
       - name: Get release download URL
         uses: actions/download-artifact@v4.1.8
@@ -401,14 +401,14 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
         with:
           repository: artichoke/artichoke
           path: artichoke
           ref: ${{ steps.release_info.outputs.commit }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5.2.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version-file: ".python-version"
 
@@ -440,7 +440,7 @@ jobs:
       # ```
       - name: Import GPG key
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
+        uses: crazy-max/ghaction-import-gpg@cb9bde2e2525e640591a934b1fd28eef1dcaf5e5 # v6.2.0
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
