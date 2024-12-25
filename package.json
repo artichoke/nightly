@@ -21,18 +21,6 @@
   "devDependencies": {
     "prettier": "^3.4.1"
   },
-  "eslintConfig": {
-    "env": {
-      "browser": true,
-      "commonjs": true,
-      "es6": true,
-      "node": true
-    },
-    "parserOptions": {
-      "ecmaVersion": 2020,
-      "sourceType": "module"
-    }
-  },
   "scripts": {
     "fmt": "prettier --write \"**/*\""
   }
