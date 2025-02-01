@@ -58,7 +58,7 @@ jobs:
 
       - name: Create GitHub release
         id: release
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_version.outputs.tag }}
@@ -80,7 +80,7 @@ jobs:
         run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: artifacts
           path: artifacts
@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@v5.4.0
         with:
           python-version-file: ".python-version"
 
@@ -280,7 +280,7 @@ jobs:
             --artifact "${{ steps.apple_codesigning.outputs.asset }}"
 
       - name: Upload release archive
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         if: runner.os == 'macOS'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -294,7 +294,7 @@ jobs:
           artifactContentType: ${{ steps.apple_codesigning.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         if: runner.os == 'macOS'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -337,7 +337,7 @@ jobs:
             --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -350,7 +350,7 @@ jobs:
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -408,7 +408,7 @@ jobs:
           ref: ${{ steps.release_info.outputs.commit }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@v5.4.0
         with:
           python-version-file: ".python-version"
 
@@ -484,7 +484,7 @@ jobs:
             --artifact "${{ steps.build.outputs.asset }}"
 
       - name: Upload release archive
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -497,7 +497,7 @@ jobs:
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -525,7 +525,7 @@ jobs:
         run: echo "release_tag=$(cat artifacts/release-version)" >> $GITHUB_OUTPUT
 
       - name: Publish release
-        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
+        uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.publish_info.outputs.release_tag }}
