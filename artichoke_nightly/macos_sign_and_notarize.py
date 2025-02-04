@@ -107,20 +107,26 @@ def run_notarytool(command: list[str]) -> str:
 
 @contextmanager
 def attach_disk_image(image: Path, *, readwrite: bool = False) -> Iterator[Path]:
+    if readwrite:
+        command = [
+            "/usr/bin/hdiutil",
+            "attach",
+            "-readwrite",
+            "-noverify",
+            "-noautoopen",
+            str(image),
+        ]
+    else:
+        command = ["/usr/bin/hdiutil", "attach", str(image)]
     try:
-        with log_group("Attaching disk image"):
-            if readwrite:
-                command = [
-                    "/usr/bin/hdiutil",
-                    "attach",
-                    "-readwrite",
-                    "-noverify",
-                    "-noautoopen",
-                    str(image),
-                ]
-            else:
-                command = ["/usr/bin/hdiutil", "attach", str(image)]
-            run_command_with_merged_output(command)
+        for attempt in stamina.retry_context(
+            on=subprocess.CalledProcessError, attempts=3
+        ):
+            with (
+                attempt,
+                log_group(f"Attaching disk image (attempt: {attempt.num})"),
+            ):
+                run_command_with_merged_output(command)
 
         mounted_image = disk_image_mount_path()
         yield mounted_image
