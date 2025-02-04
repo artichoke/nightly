@@ -96,7 +96,10 @@ def run_notarytool(command: list[str]) -> str:
     # inspect stderr for known 500s and retry with exponential backoff.
     #
     # See: https://github.com/artichoke/nightly/issues/129
-    if "Error: HTTP status code: 500. Internal Server Error" in proc.stderr:
+    if (
+        "Error: HTTP status code: 500. Internal Server Error" in proc.stderr
+        or "The request timed out" in proc.stderr
+    ):
         raise NotaryToolInternalServerError(proc.stderr)
 
     raise NotaryToolError(proc.stderr)
