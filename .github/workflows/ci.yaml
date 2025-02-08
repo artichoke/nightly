@@ -151,7 +151,7 @@ jobs:
         run: uv python install
 
       - name: Format with ruff
-        run: uv run ruff --diff .
+        run: uv run ruff format --diff .
 
       - name: Lint with ruff
         run: uv run ruff check --output-format=github .
