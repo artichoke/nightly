@@ -118,6 +118,8 @@ def attach_disk_image(image: Path, *, readwrite: bool = False) -> Iterator[Path]
         ]
     else:
         command = ["/usr/bin/hdiutil", "attach", str(image)]
+
+    mounted_image = None
     try:
         for attempt in stamina.retry_context(
             on=subprocess.CalledProcessError, attempts=3
@@ -131,10 +133,11 @@ def attach_disk_image(image: Path, *, readwrite: bool = False) -> Iterator[Path]
         mounted_image = disk_image_mount_path()
         yield mounted_image
     finally:
-        with log_group("Detaching disk image"):
-            run_command_with_merged_output(
-                ["/usr/bin/hdiutil", "detach", str(mounted_image)],
-            )
+        if mounted_image is not None:
+            with log_group("Detaching disk image"):
+                run_command_with_merged_output(
+                    ["/usr/bin/hdiutil", "detach", str(mounted_image)],
+                )
 
 
 def get_image_size(image: Path) -> int:

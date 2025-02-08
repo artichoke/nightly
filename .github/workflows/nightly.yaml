@@ -14,7 +14,7 @@ name: Nightly Builder
       name:
         description: Release name
         required: true
-
+permissions: {}
 jobs:
   create-release:
     name: Create Release
@@ -27,26 +27,32 @@ jobs:
       - name: Get the release version from the tag
         id: release_version
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
             release_name="nightly-$(date '+%Y-%m-%d')"
             release_tag="$release_name"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            release_name=${{ github.event.inputs.name }}
-            release_tag=${{ github.event.inputs.tag }}
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            release_name="$EVENT_INPUT_NAME"
+            release_tag="$EVENT_INPUT_TAG"
           else
-            release_name="$(basename "${{ github.ref }}")"
+            release_name="$(basename "$GITHUB_REF")"
             release_tag="$release_name"
           fi
           echo "Release name is: ${release_name}"
           echo "Release version is: ${release_tag}"
           echo "name=${release_name}" >> $GITHUB_OUTPUT
           echo "tag=${release_tag}" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          EVENT_INPUT_NAME: ${{ github.event.inputs.name }}
+          EVENT_INPUT_TAG: ${{ github.event.inputs.tag }}
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: artichoke/artichoke
           path: artichoke
+          persist-credentials: false
 
       - name: Set latest_commit
         id: latest_commit
@@ -68,19 +74,27 @@ jobs:
           body: artichoke/artichoke@${{ steps.latest_commit.outputs.commit }}
 
       - name: Save release commit hash to artifact
-        run: echo "${{ steps.latest_commit.outputs.commit }}" > artifacts/release-commit-hash
+        run: echo "$COMMIT_HASH" > artifacts/release-commit-hash
+        env:
+          COMMIT_HASH: ${{ steps.latest_commit.outputs.commit }}
 
       - name: Save release ID to artifact
-        run: echo "${{ steps.release.outputs.id }}" > artifacts/release-id
+        run: echo "$RELEASE_ID" > artifacts/release-id
+        env:
+          RELEASE_ID: ${{ steps.release.outputs.id }}
 
       - name: Save release upload URL to artifact
-        run: echo "${{ steps.release.outputs.upload_url }}" > artifacts/release-upload-url
+        run: echo "$RELEASE_UPLOAD_URL" > artifacts/release-upload-url
+        env:
+          RELEASE_UPLOAD_URL: ${{ steps.release.outputs.upload_url }}
 
       - name: Save version number to artifact
-        run: echo "${{ steps.release_version.outputs.tag }}" > artifacts/release-version
+        run: echo "$RELEASE_VERSION" > artifacts/release-version
+        env:
+          RELEASE_VERSION: ${{ steps.release_version.outputs.tag }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4.6.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: artifacts
           path: artifacts
@@ -124,10 +138,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: artifacts
           path: artifacts
@@ -149,7 +165,7 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@v1.15.0
+        uses: artichoke/generate_third_party@4da01edc4b60228846ab2949292044fc55bfb193 # v1.15.0
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
@@ -157,7 +173,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: artichoke/artichoke
           path: artichoke
@@ -167,38 +183,27 @@ jobs:
           # The Artichoke release metadata build script calculates Ruby
           # constants like `RUBY_REVISION` by walking the git history.
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup Python
-        uses: actions/setup-python@v5.4.0
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@4db96194c378173c656ce18a155ffc14a9fc4355 # v5.2.2
         with:
-          python-version-file: ".python-version"
+          version: "latest"
+          enable-cache: false
 
-      - name: Set Python executable path based on OS
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "VENV_PYTHON=venv\\Scripts\\python" >> $GITHUB_ENV
-          else
-            echo "VENV_PYTHON=venv/bin/python3" >> $GITHUB_ENV
-          fi
-
-      - name: Install Python dependencies
-        shell: bash
-        run: |
-          python3 -m venv --upgrade-deps venv
-          $VENV_PYTHON -m pip install --upgrade pip wheel
-          $VENV_PYTHON -m pip install --require-hashes -r requirements.txt
+      - name: Set up Python
+        run: uv python install
 
       - name: Set Artichoke Rust toolchain version
         shell: bash
         id: rust_toolchain
         run: |
-          $VENV_PYTHON -m artichoke_nightly.rust_toolchain_version \
+          uv run python -m artichoke_nightly.rust_toolchain_version \
             --file artichoke/rust-toolchain.toml \
             --format github
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
+        uses: artichoke/setup-rust/build-and-test@68e0ebb3b406970de1cc2ca807797c9156a198a7 # v2.0.1
         with:
           toolchain: ${{ steps.rust_toolchain.outputs.version }}
           target: ${{ matrix.target }}
@@ -257,7 +262,7 @@ jobs:
         id: apple_codesigning
         if: runner.os == 'macOS'
         run: |
-          $VENV_PYTHON -m artichoke_nightly.macos_sign_and_notarize \
+          uv run python -m artichoke_nightly.macos_sign_and_notarize \
             "artichoke-nightly-${{ matrix.target }}" \
             --binary "artichoke/target/${{ matrix.target }}/release/artichoke" \
             --binary "artichoke/target/${{ matrix.target }}/release/airb" \
@@ -275,9 +280,9 @@ jobs:
         id: apple_codesigning_gpg
         if: runner.os == 'macOS'
         run: |
-          $VENV_PYTHON -m artichoke_nightly.gpg_sign \
-            "artichoke-nightly-${{ matrix.target }}" \
-            --artifact "${{ steps.apple_codesigning.outputs.asset }}"
+          uv run python -m artichoke_nightly.gpg_sign "artichoke-nightly-${{ matrix.target }}" --artifact "$ARTIFACT"
+        env:
+          ARTIFACT: ${{ steps.apple_codesigning.outputs.asset }}
 
       - name: Upload release archive
         uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
@@ -332,9 +337,9 @@ jobs:
         shell: bash
         id: gpg_signing
         run: |
-          $VENV_PYTHON -m artichoke_nightly.gpg_sign \
-            "artichoke-nightly-${{ matrix.target }}" \
-            --artifact "${{ steps.build.outputs.asset }}"
+          uv run python -m artichoke_nightly.gpg_sign "artichoke-nightly-${{ matrix.target }}" --artifact "$ARTIFACT"
+        env:
+          ARTIFACT: ${{ steps.build.outputs.asset }}
 
       - name: Upload release archive
         uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
@@ -376,10 +381,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: artifacts
           path: artifacts
@@ -401,32 +408,21 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Clone Artichoke
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: artichoke/artichoke
           path: artichoke
           ref: ${{ steps.release_info.outputs.commit }}
+          persist-credentials: false
 
-      - name: Setup Python
-        uses: actions/setup-python@v5.4.0
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@4db96194c378173c656ce18a155ffc14a9fc4355 # v5.2.2
         with:
-          python-version-file: ".python-version"
+          version: "latest"
+          enable-cache: false
 
-      - name: Set Python executable path based on OS
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "VENV_PYTHON=venv\\Scripts\\python" >> $GITHUB_ENV
-          else
-            echo "VENV_PYTHON=venv/bin/python3" >> $GITHUB_ENV
-          fi
-
-      - name: Install Python dependencies
-        shell: bash
-        run: |
-          python3 -m venv --upgrade-deps venv
-          $VENV_PYTHON -m pip install --upgrade pip wheel
-          $VENV_PYTHON -m pip install --require-hashes -r requirements.txt
+      - name: Set up Python
+        run: uv python install
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
@@ -461,7 +457,9 @@ jobs:
             --format ${{ matrix.archive }} \
             -9 \
             --output=`pwd`/artichoke-nightly.source.${{ matrix.archive }} \
-            ${{ steps.release_info.outputs.commit }}
+            "$COMMIT"
+        env:
+          COMMIT: ${{ steps.release_info.outputs.commit }}
 
       - name: Build archive
         shell: bash
@@ -479,9 +477,9 @@ jobs:
         shell: bash
         id: gpg_signing
         run: |
-          $VENV_PYTHON -m artichoke_nightly.gpg_sign \
-            "artichoke-nightly-source-archive" \
-            --artifact "${{ steps.build.outputs.asset }}"
+          uv run -m artichoke_nightly.gpg_sign "artichoke-nightly-source-archive" --artifact "$ARTIFACT"
+        env:
+          ARTIFACT: ${{ steps.build.outputs.asset }}
 
       - name: Upload release archive
         uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
@@ -515,7 +513,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get release download URL
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: artifacts
           path: artifacts

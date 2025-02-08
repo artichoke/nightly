@@ -4,46 +4,37 @@ version = "0"
 license = {file = "LICENSE"}
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
-  "stamina==24.3.0",
-  "validators==0.34.0",
+    "stamina>=24.3.0",
+    "validators>=0.34.0",
 ]
 requires-python = ">= 3.12"
-
-[project.optional-dependencies]
-dev = [
-  "black==25.1.0",
-  "mypy==1.14.1",
-  "ruff==0.9.4",
-]
 
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.black]
-line-length = 88
-target-version = ['py312']
-include = '\.pyi?$'
-
-[tool.isort]
-atomic = true
-profile = "black"
-line_length = 88
-skip_gitignore = true
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-show_error_codes = true
-pretty = true
-exclude = [
-  "^.git$",
-  "^venv$",
+[tool.pyright]
+include = [
+    "artichoke_nightly",
+    "tasks.py",
 ]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/venv",
+    "**/.venv",
+]
+ignore = []
 
-[[tool.mypy.overrides]]
-module = ["validators.*"]
-ignore_missing_imports = true
+reportMissingImports = "error"
+reportMissingTypeStubs = false
+
+pythonVersion = "3.13"
+pythonPlatform = "All"
+
+executionEnvironments = [
+  { root = "artichoke_nightly" }
+]
 
 [tool.ruff]
 target-version = "py312"
@@ -55,3 +46,14 @@ ignore = ["COM812", "D", "EM", "S603", "T201", "TRY003", "UP007"]
 [tool.setuptools.packages.find]
 include = ["artichoke_nightly"]
 exclude = ["node_modules"]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "invoke>=2.2.0",
+    "pyright>=1.1.393",
+    "ruff>=0.9.5",
+    "types-invoke>=2.0.0.10",
+    "types-pyyaml>=6.0.12.20241230",
+    "yamllint>=1.35.1",
+]
