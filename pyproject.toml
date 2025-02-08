@@ -49,7 +49,6 @@ exclude = ["node_modules"]
 
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
     "invoke>=2.2.0",
     "pyright>=1.1.393",
     "ruff>=0.9.5",
