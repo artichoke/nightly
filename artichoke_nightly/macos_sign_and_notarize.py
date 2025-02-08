@@ -134,7 +134,10 @@ def attach_disk_image(image: Path, *, readwrite: bool = False) -> Iterator[Path]
         yield mounted_image
     finally:
         if mounted_image is not None:
-            with log_group("Detaching disk image"):
+            with (
+                log_group("Detaching disk image"),
+                suppress(subprocess.CalledProcessError),
+            ):
                 run_command_with_merged_output(
                     ["/usr/bin/hdiutil", "detach", str(mounted_image)],
                 )
