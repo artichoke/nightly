@@ -19,6 +19,8 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Create artifacts directory
@@ -103,6 +105,8 @@ jobs:
     name: Build Release
     needs: ["create-release"]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
 
     strategy:
       fail-fast: false
@@ -371,6 +375,8 @@ jobs:
     name: Package Source Archive
     needs: ["create-release"]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     strategy:
       fail-fast: false
@@ -511,6 +517,9 @@ jobs:
     name: Publish Release
     needs: ["build-release", "package-source-archive"]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Get release download URL
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
