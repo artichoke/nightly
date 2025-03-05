@@ -3,9 +3,9 @@ from pathlib import Path
 from urllib.request import urlopen
 
 import stamina
-import validators
 
 from .shell_utils import run_command_with_merged_output
+from .utils import is_secure_public_url
 
 # Default URL for Apple's Worldwide Developer Relations G2 CA certificate.
 #
@@ -63,8 +63,7 @@ def install_apple_g2_ca_certificate(
     if keychain is None:
         keychain = Path("/Library/Keychains/System.keychain")
 
-    validation = validators.url(certificate_url, public=True)
-    if not validation:
+    if not is_secure_public_url(certificate_url):
         print("Invalid Apple G2 CA certificate URL, skipping")
         return
 

@@ -19,12 +19,12 @@ from typing import Optional
 from urllib.request import urlopen
 
 import stamina
-import validators
 
 from .apple_pki import install_apple_g2_ca_certificate
 from .error_reporting import report_subprocess_error
 from .github_actions import emit_metadata, log_group, runner_tempdir, set_output
 from .shell_utils import run_command_with_merged_output
+from .utils import is_secure_public_url
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.6.0"
 
@@ -534,8 +534,7 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
 
         print(f"Fetching DMG icns file at {url}")
 
-        validation = validators.url(url, public=True)
-        if not validation:
+        if not is_secure_public_url(url):
             print("Invalid DMG icns asset URL, skipping")
             return
 
