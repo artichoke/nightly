@@ -6,8 +6,8 @@ import validators
 
 def is_secure_public_url(url: str) -> bool:
     """
-    Validate that the URL is syntactically correct, uses HTTPS,
-    and its hostname is not an IP address.
+    Validate that the URL is syntactically correct, uses HTTPS, and its hostname
+    is not an IP address.
 
     Args:
         url (str): The URL to validate.

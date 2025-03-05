@@ -1,3 +1,5 @@
+import io
+import shutil
 import tempfile
 from pathlib import Path
 from urllib.request import urlopen
@@ -5,7 +7,7 @@ from urllib.request import urlopen
 import stamina
 
 from .shell_utils import run_command_with_merged_output
-from .utils import is_secure_public_url
+from .validator_utils import is_secure_public_url
 
 # Default URL for Apple's Worldwide Developer Relations G2 CA certificate.
 #
@@ -19,28 +21,56 @@ DEFAULT_APPLE_G2_CA_URL = (
 )
 
 
-@stamina.retry(attempts=3, on=Exception)
-def _add_trusted_cert(cert_path: Path, keychain: Path) -> None:
+def _add_trusted_cert(*, cert_path: Path, keychain: Path) -> None:
     """
-    Helper function to add the certificate at `cert_path` to the specified `keychain`
-    using the 'security add-trusted-cert' command. This function is retried up to three
-    times with exponential backoff (via stamina) to mitigate transient failures.
+    Helper function to add the certificate at `cert_path` to the specified
+    `keychain` using the 'security import' command instead of 'security
+    add-trusted-cert'.
+
+    The 'security add-trusted-cert' command would be preferred because it
+    explicitly sets the certificate as trusted for all users. However, it
+    requires interactive approval in macOS, which makes it unsuitable for
+    automated environments like CI/CD.
+
+    Instead, we use 'security import' to add the certificate to the keychain
+    without modifying trust settings. This allows codesigning and notarization
+    processes to work without requiring user interaction.
     """
     command = [
         "security",
-        "add-trusted-cert",
-        "-d",  # Add certificate as trusted for all users.
-        "-r",
-        "trustRoot",  # Set trust settings to trust as root.
+        "import",
+        str(cert_path),
         "-k",
         str(keychain),
-        str(cert_path),
+        "-T",
+        "/usr/bin/codesign",
     ]
     run_command_with_merged_output(command)
 
 
+@stamina.retry(attempts=3, on=Exception)
+def _fetch_apple_g2_ca_certificate(certificate_url: str) -> io.BytesIO:
+    """
+    Fetch the Apple G2 CA certificate from the given URL and return it as a
+    BytesIO object.
+    """
+
+    if not is_secure_public_url(certificate_url):
+        print("Invalid Apple G2 CA certificate URL, skipping")
+        raise ValueError(f"Invalid Apple G2 CA certificate URL: {certificate_url}")
+
+    cert_data = io.BytesIO()
+    with urlopen(certificate_url) as response:  # noqa: S310
+        shutil.copyfileobj(response, cert_data)
+
+    cert_data.seek(0)
+    return cert_data
+
+
 def install_apple_g2_ca_certificate(
-    certificate_url: str = DEFAULT_APPLE_G2_CA_URL, keychain: Path | None = None
+    *,
+    keychain: Path | None = None,
+    certificate_url: str = DEFAULT_APPLE_G2_CA_URL,
 ) -> None:
     """
     Download and install Apple's Worldwide Developer Relations G2 CA certificate
@@ -63,31 +93,16 @@ def install_apple_g2_ca_certificate(
     if keychain is None:
         keychain = Path("/Library/Keychains/System.keychain")
 
-    if not is_secure_public_url(certificate_url):
-        print("Invalid Apple G2 CA certificate URL, skipping")
-        return
-
     print(f"Downloading Apple G2 CA certificate from {certificate_url}")
-    cert_data = None
-    try:
-        for attempt in stamina.retry_context(attempts=3, on=Exception):
-            with (
-                attempt,
-                urlopen(certificate_url, timeout=10) as response,  # noqa: S310
-            ):
-                cert_data = response.read()
-    except Exception as e:
-        print(f"Error downloading certificate: {e}")
-        raise
-
-    assert cert_data is not None, "Failed to download certificate data"  # noqa: S101
+    cert_data = _fetch_apple_g2_ca_certificate(certificate_url)
 
     # Save the downloaded certificate data to a temporary file.
     with tempfile.NamedTemporaryFile(suffix=".cer") as temp_cert:
         cert_file_path = Path(temp_cert.name)
-        temp_cert.write(cert_data)
+        shutil.copyfileobj(cert_data, temp_cert)
+        temp_cert.flush()
         print(f"Certificate downloaded and saved to temporary file: {cert_file_path}")
 
         print(f"Installing certificate into keychain: {keychain}")
-        _add_trusted_cert(cert_file_path, keychain)
+        _add_trusted_cert(cert_path=cert_file_path, keychain=keychain)
         print("Apple G2 CA certificate installed successfully.")
