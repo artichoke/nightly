@@ -21,6 +21,7 @@ from urllib.request import urlopen
 import stamina
 import validators
 
+from .apple_pki import install_apple_g2_ca_certificate
 from .error_reporting import report_subprocess_error
 from .github_actions import emit_metadata, log_group, runner_tempdir, set_output
 from .shell_utils import run_command_with_merged_output
@@ -453,14 +454,14 @@ def import_codesigning_certificate() -> None:
                 path=cert, name="Developer Application", password=certificate_password
             )
 
-    apple_certs = Path("apple-certs").resolve()
+    apple_pki = Path(__file__).parent.parent.joinpath("apple-pki").resolve()
     with log_group("Import provisioning profile"):
         import_certificate(
-            path=apple_certs.joinpath("artichoke-provisioning-profile-signing.cer")
+            path=apple_pki.joinpath("artichoke-provisioning-profile-signing.cer")
         )
 
-    with log_group("Import certificate chain"):
-        import_certificate(path=apple_certs.joinpath("DeveloperIDG2CA.cer"))
+    with log_group("Install Apple G2 CA certificate"):
+        install_apple_g2_ca_certificate(keychain=keychain_path())
 
     with log_group("Show codesigning identities"):
         run_command_with_merged_output(
