@@ -15,15 +15,15 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional
 from urllib.request import urlopen
 
 import stamina
-import validators
 
+from .apple_pki import install_apple_g2_ca_certificate
 from .error_reporting import report_subprocess_error
 from .github_actions import emit_metadata, log_group, runner_tempdir, set_output
 from .shell_utils import run_command_with_merged_output
+from .validator_utils import is_secure_public_url
 
 MACOS_SIGN_AND_NOTARIZE_VERSION = "0.6.0"
 
@@ -34,7 +34,7 @@ MACOS_MONTEREY_MAJOR_VERSION = 12
 class Args:
     resources: list[Path]
     binaries: list[Path]
-    dmg_icon_url: Optional[str]
+    dmg_icon_url: str | None
     release: str
 
 
@@ -395,7 +395,7 @@ def import_notarization_credentials() -> None:
 
 
 def import_certificate(
-    *, path: Path, name: Optional[str] = None, password: Optional[str] = None
+    *, path: Path, name: str | None = None, password: str | None = None
 ) -> None:
     """
     Import a certificate at a given path into the build keychain.
@@ -453,14 +453,14 @@ def import_codesigning_certificate() -> None:
                 path=cert, name="Developer Application", password=certificate_password
             )
 
-    apple_certs = Path("apple-certs").resolve()
+    apple_pki = Path(__file__).parent.parent.joinpath("apple-pki").resolve()
     with log_group("Import provisioning profile"):
         import_certificate(
-            path=apple_certs.joinpath("artichoke-provisioning-profile-signing.cer")
+            path=apple_pki.joinpath("artichoke-provisioning-profile-signing.cer")
         )
 
-    with log_group("Import certificate chain"):
-        import_certificate(path=apple_certs.joinpath("DeveloperIDG2CA.cer"))
+    with log_group("Install Apple G2 CA certificate"):
+        install_apple_g2_ca_certificate(keychain=keychain_path())
 
     with log_group("Show codesigning identities"):
         run_command_with_merged_output(
@@ -533,8 +533,7 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
 
         print(f"Fetching DMG icns file at {url}")
 
-        validation = validators.url(url, public=True)
-        if not validation:
+        if not is_secure_public_url(url):
             print("Invalid DMG icns asset URL, skipping")
             return
 
@@ -556,7 +555,7 @@ def create_notarization_bundle(
     release_name: str,
     binaries: list[Path],
     resources: list[Path],
-    dmg_icon_url: Optional[str],
+    dmg_icon_url: str | None,
 ) -> Path:
     """
     Create a disk image with the codesigned binaries to submit to the Apple

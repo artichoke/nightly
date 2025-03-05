@@ -190,13 +190,16 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # v5.3.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
         with:
           version: "latest"
           enable-cache: false
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       - name: Set Artichoke Rust toolchain version
         shell: bash
@@ -422,13 +425,16 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # v5.3.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
         with:
           version: "latest"
           enable-cache: false
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org

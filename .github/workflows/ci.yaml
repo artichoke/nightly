@@ -21,7 +21,7 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # v5.3.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
         with:
           version: "latest"
 
@@ -87,12 +87,15 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # v5.3.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
         with:
           version: "latest"
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       - name: Clone Artichoke
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -110,7 +113,6 @@ jobs:
       - name: Run Apple Codesigning and Notarization
         shell: bash
         id: apple_codesigning
-        if: runner.os == 'macOS'
         run: |
           uv run python -m artichoke_nightly.macos_sign_and_notarize "nightly-apple-codesign-test" \
             --binary "artichoke/target/release/artichoke" \
@@ -143,12 +145,15 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # v5.3.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
         with:
           version: "latest"
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       - name: Format with ruff
         run: uv run ruff format --diff .
@@ -169,12 +174,15 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # v5.3.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
         with:
           version: "latest"
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       - name: Setup Node.js runtime
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
