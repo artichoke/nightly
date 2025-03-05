@@ -94,6 +94,9 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Setup virtualenv
+        run: uv sync
+
       - name: Clone Artichoke
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -110,7 +113,6 @@ jobs:
       - name: Run Apple Codesigning and Notarization
         shell: bash
         id: apple_codesigning
-        if: runner.os == 'macOS'
         run: |
           uv run python -m artichoke_nightly.macos_sign_and_notarize "nightly-apple-codesign-test" \
             --binary "artichoke/target/release/artichoke" \
@@ -150,6 +152,9 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Setup virtualenv
+        run: uv sync
+
       - name: Format with ruff
         run: uv run ruff format --diff .
 
@@ -175,6 +180,9 @@ jobs:
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       - name: Setup Node.js runtime
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0

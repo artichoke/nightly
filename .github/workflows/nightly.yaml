@@ -198,6 +198,9 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Setup virtualenv
+        run: uv sync
+
       - name: Set Artichoke Rust toolchain version
         shell: bash
         id: rust_toolchain
@@ -429,6 +432,9 @@ jobs:
 
       - name: Set up Python
         run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
 
       # ```
       # $ gpg --fingerprint --with-subkey-fingerprints codesign@artichokeruby.org
