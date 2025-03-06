@@ -14,9 +14,14 @@ def standard_log_record_attrs() -> set[str]:
     Returns:
         set[str]: The standard attributes of a LogRecord.
     """
-    return set(
+    standard_attrs = set(
         logging.LogRecord("", logging.INFO, "", 1, "", None, None, "").__dict__.keys()
     )
+
+    # Include dynamically added attributes
+    standard_attrs.update({"message", "asctime"})
+
+    return standard_attrs
 
 
 class ExtrasKeyValueFormatter(logging.Formatter):
