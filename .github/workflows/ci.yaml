@@ -28,6 +28,9 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Setup virtualenv
+        run: uv sync
+
       - name: Clone Artichoke
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:

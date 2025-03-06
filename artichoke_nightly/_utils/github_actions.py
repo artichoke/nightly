@@ -1,7 +1,10 @@
+import logging
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def set_output(*, name: str, value: str) -> None:
@@ -17,7 +20,7 @@ def set_output(*, name: str, value: str) -> None:
 
     if github_output := os.getenv("GITHUB_OUTPUT"):
         with Path(github_output).open("a") as out:
-            print(f"{name}={value}", file=out)
+            print(f"{name}={value}", file=out, flush=True)
 
 
 @contextmanager
@@ -38,11 +41,14 @@ def log_group(group: str) -> Iterator[None]:
         yield
         return
 
-    print(f"::group::{group}")
+    # intentionally use print instead of logger to ensure the group is created.
+    # These tokens are specially recognized by GitHub Actions to create log
+    # groups.
+    print(f"::group::{group}", flush=True)
     try:
         yield
     finally:
-        print("::endgroup::")
+        print("::endgroup::", flush=True)
 
 
 def emit_metadata() -> None:
@@ -50,21 +56,21 @@ def emit_metadata() -> None:
         return
     with log_group("Workflow metadata"):
         if repository := os.getenv("GITHUB_REPOSITORY"):
-            print(f"GitHub Repository: {repository}")
+            logger.info("GitHub Repository: %s", repository)
         if actor := os.getenv("GITHUB_ACTOR"):
-            print(f"GitHub Actor: {actor}")
+            logger.info("GitHub Actor: %s", actor)
         if workflow := os.getenv("GITHUB_WORKFLOW"):
-            print(f"GitHub Workflow: {workflow}")
+            logger.info("GitHub Workflow: %s", workflow)
         if job := os.getenv("GITHUB_JOB"):
-            print(f"GitHub Job: {job}")
+            logger.info("GitHub Job: %s", job)
         if run_id := os.getenv("GITHUB_RUN_ID"):
-            print(f"GitHub Run ID: {run_id}")
+            logger.info("GitHub Run ID: %s", run_id)
         if ref := os.getenv("GITHUB_REF"):
-            print(f"GitHub Ref: {ref}")
+            logger.info("GitHub Ref: %s", ref)
         if ref_name := os.getenv("GITHUB_REF_NAME"):
-            print(f"GitHub Ref Name: {ref_name}")
+            logger.info("GitHub Ref Name: %s", ref_name)
         if sha := os.getenv("GITHUB_SHA"):
-            print(f"GitHub SHA: {sha}")
+            logger.info("GitHub SHA: %s", sha)
 
 
 def runner_tempdir() -> Path | None:

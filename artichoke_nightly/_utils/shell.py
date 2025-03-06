@@ -26,4 +26,4 @@ def run_command_with_merged_output(command: list[str]) -> None:
 
     for line in proc.stdout.splitlines():
         if line:
-            print(line)
+            print(line, flush=True)

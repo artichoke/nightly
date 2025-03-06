@@ -4,6 +4,7 @@ import argparse
 import base64
 import binascii
 import json
+import logging
 import os
 import secrets
 import shutil
@@ -15,19 +16,23 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from urllib.error import URLError
 from urllib.request import urlopen
 
 import stamina
 
-from .apple_pki import install_apple_g2_ca_certificate
-from .error_reporting import report_subprocess_error
-from .github_actions import emit_metadata, log_group, runner_tempdir, set_output
-from .shell_utils import run_command_with_merged_output
-from .validator_utils import is_secure_public_url
+from ._utils.apple_pki import install_apple_g2_ca_certificate
+from ._utils.error_reporting import report_subprocess_error
+from ._utils.github_actions import emit_metadata, log_group, runner_tempdir, set_output
+from ._utils.logger import setup_logger
+from ._utils.shell import run_command_with_merged_output
+from ._utils.validator import is_secure_public_url
 
-MACOS_SIGN_AND_NOTARIZE_VERSION = "0.6.0"
+MACOS_SIGN_AND_NOTARIZE_VERSION = "0.7.0"
 
 MACOS_MONTEREY_MAJOR_VERSION = 12
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -87,7 +92,7 @@ def run_notarytool(command: list[str]) -> str:
         text=True,
     )
     if proc.stderr:
-        print(proc.stderr, file=sys.stderr)
+        logger.error("notarytool stderr: %s", proc.stderr)
 
     if proc.returncode == 0:
         return proc.stdout
@@ -100,8 +105,10 @@ def run_notarytool(command: list[str]) -> str:
         "Error: HTTP status code: 500. Internal Server Error" in proc.stderr
         or "The request timed out" in proc.stderr
     ):
+        logger.warning("notarytool failed with 500 error, retrying: %s", proc.stderr)
         raise NotaryToolInternalServerError(proc.stderr)
 
+    logger.error("notarytool failed with unknown error: %s", proc.stderr)
     raise NotaryToolError(proc.stderr)
 
 
@@ -282,13 +289,16 @@ def create_keychain(*, keychain_password: str) -> None:
                 str(keychain_path()),
             ]
         )
-        print(f"Created keychain at {keychain_path()}")
+        logger.info("Created keychain", extra={"keychain_path": keychain_path()})
 
         # security set-keychain-settings -lut 900 "$keychain_path"
         run_command_with_merged_output(
             ["security", "set-keychain-settings", "-lut", "900", str(keychain_path())]
         )
-        print("Set keychain to be ephemeral")
+        logger.info(
+            "Set keychain to be ephemeral with lock timeout of 900 seconds",
+            extra={"keychain_path": keychain_path()},
+        )
 
         # security unlock-keychain -p "$keychain_password" "$keychain_path"
         run_command_with_merged_output(
@@ -300,7 +310,7 @@ def create_keychain(*, keychain_password: str) -> None:
                 str(keychain_path()),
             ]
         )
-        print(f"Unlocked keychain at {keychain_path()}")
+        logger.info("Unlocked keychain", extra={"keychain_path": keychain_path()})
 
         # Per `man codesign`, the keychain filename passed via the `--keychain`
         # argument will not be searched to resolve the signing identity's
@@ -329,7 +339,7 @@ def create_keychain(*, keychain_password: str) -> None:
         run_command_with_merged_output(
             ["/usr/bin/security", "list-keychains", "-d", "user", "-s", *search_path]
         )
-        print(f"Set keychain search path: {', '.join(search_path)}")
+        logger.info("Set keychain search path", extra={"search_path": search_path})
 
 
 def delete_keychain() -> None:
@@ -350,13 +360,16 @@ def delete_keychain() -> None:
             check=False,
         )
         for line in proc.stdout.splitlines():
-            print(line)
+            print(line, flush=True)
 
         if proc.returncode == 0:
-            print(f"Keychain deleted from {keychain_path()}")
+            logger.info("Deleted keychain", extra={"keychain_path": keychain_path()})
         else:
             # keychain does not exist
-            print(f"Keychain not found at {keychain_path()}, ignoring ...")
+            logger.warning(
+                "Keychain not found when attempting delete",
+                extra={"keychain_path": keychain_path()},
+            )
 
 
 def import_notarization_credentials() -> None:
@@ -391,7 +404,7 @@ def import_notarization_credentials() -> None:
                 str(keychain_path()),
             ],
         )
-        print(output)
+        print(output, flush=True)
 
 
 def import_certificate(
@@ -416,7 +429,7 @@ def import_certificate(
     run_command_with_merged_output(command)
 
     cert_name = path if name is None else name
-    print(f"Imported certificate {cert_name}")
+    logger.info("Imported certificate %s", cert_name)
 
 
 def import_codesigning_certificate() -> None:
@@ -435,15 +448,20 @@ def import_codesigning_certificate() -> None:
     with log_group("Import codesigning certificate"):
         encoded_certificate = os.getenv("MACOS_CERTIFICATE")
         if not encoded_certificate:
+            logger.error("Missing required environment variable: MACOS_CERTIFICATE")
             raise MissingCodeSigningCertificateError
 
         try:
             certificate = base64.b64decode(encoded_certificate, validate=True)
         except binascii.Error as exc:
+            logger.exception("Invalid base64-encoded certificate in MACOS_CERTIFICATE")
             raise MissingCodeSigningCertificateError from exc
 
         certificate_password = os.getenv("MACOS_CERTIFICATE_PASSPHRASE")
         if not certificate_password:
+            logger.error(
+                "Missing required environment variable: MACOS_CERTIFICATE_PASSPHRASE"
+            )
             raise MissingCodeSigningCertificatePassphraseError
 
         with TemporaryDirectory() as tempdirname:
@@ -455,14 +473,22 @@ def import_codesigning_certificate() -> None:
 
     apple_pki = Path(__file__).parent.parent.joinpath("apple-pki").resolve()
     with log_group("Import provisioning profile"):
-        import_certificate(
-            path=apple_pki.joinpath("artichoke-provisioning-profile-signing.cer")
+        provisioning_profile_path = apple_pki.joinpath(
+            "artichoke-provisioning-profile-signing.cer"
         )
+        logger.info(
+            "Importing provisioning profile", extra={"path": provisioning_profile_path}
+        )
+        import_certificate(path=provisioning_profile_path)
 
     with log_group("Install Apple G2 CA certificate"):
+        logger.info(
+            "Installing Apple G2 CA certificate", extra={"keychain": keychain_path()}
+        )
         install_apple_g2_ca_certificate(keychain=keychain_path())
 
     with log_group("Show codesigning identities"):
+        logger.info("Available codesigning identities")
         run_command_with_merged_output(
             ["security", "find-identity", "-p", "codesigning", str(keychain_path())]
         )
@@ -522,6 +548,7 @@ def codesign_binary(*, binary_path: Path) -> None:
         )
 
 
+@stamina.retry(on=(TimeoutError, URLError), attempts=3)
 def setup_dmg_icon(*, dest: Path, url: str) -> None:
     """
     Fetch a .icns file from the given URL and set it as the volume icon for
@@ -531,23 +558,24 @@ def setup_dmg_icon(*, dest: Path, url: str) -> None:
     with log_group("Set disk image icon"):
         icns = dest.joinpath(".VolumeIcon.icns")
 
-        print(f"Fetching DMG icns file at {url}")
+        logger.info("Fetching DMG icns file from %s", url)
 
         if not is_secure_public_url(url):
-            print("Invalid DMG icns asset URL, skipping")
+            logger.warning("Invalid DMG icns asset URL, skipping", extra={"url": url})
             return
 
         with (
             urlopen(url, data=None, timeout=3) as remote,  # noqa: S310
             icns.open("wb") as out,
         ):
-            print("Copying remote icns file to DMG archive")
+            logger.info("Copying remote icns file to DMG archive")
             shutil.copyfileobj(remote, out)
 
+        logger.info("Setting DMG icns file")
         run_command_with_merged_output(["/usr/bin/SetFile", "-c", "icnC", str(icns)])
         # Tell the volume that it has a special file attribute
         run_command_with_merged_output(["/usr/bin/SetFile", "-a", "C", str(dest)])
-        print("DMG icns file set!")
+        logger.info("DMG icns file set!")
 
 
 def create_notarization_bundle(
@@ -567,12 +595,18 @@ def create_notarization_bundle(
     Returns:
         Path: The path to the newly created and signed DMG archive.
     """
-    stage = prepare_stage_directory(release_name)
-    copy_binaries_and_resources(stage, binaries, resources)
-    dmg_writable, dmg = create_disk_image(stage, release_name)
+    with log_group(f"Prepare stage directory [{release_name}]"):
+        stage = prepare_stage_directory(release_name)
+    with log_group("Copy binaries and resources to stage"):
+        copy_binaries_and_resources(stage, binaries, resources)
+    with log_group("Create disk image"):
+        dmg_writable, dmg = create_disk_image(stage, release_name)
 
-    if dmg_icon_url:
-        add_icon_to_disk_image(dmg_writable, dmg_icon_url)
+    with log_group("Add icon to disk image"):
+        if dmg_icon_url:
+            add_icon_to_disk_image(dmg_writable, dmg_icon_url)
+        else:
+            logger.warning("Skipping setting disk image icon because none was provided")
 
     compress_disk_image(dmg_writable, dmg)
     codesign_binary(binary_path=dmg)
@@ -590,8 +624,10 @@ def prepare_stage_directory(release_name: str) -> Path:
         Path: The path to the prepared stage directory.
     """
     stage = Path("dist").joinpath(release_name)
+    logger.info("Prepare stage directory", extra={"stage": stage})
     with suppress(FileNotFoundError):
         shutil.rmtree(stage)
+        logger.info("Removed existing stage directory", extra={"stage": stage})
     stage.mkdir(parents=True)
     return stage
 
@@ -607,9 +643,19 @@ def copy_binaries_and_resources(
         binaries (list[Path]): The list of binary files to be copied.
         resources (list[Path]): The list of resource files to be copied.
     """
+    logger.info(
+        "Copy %i binaries and %i resources to stage",
+        len(binaries),
+        len(resources),
+        extra={"stage": stage},
+    )
     for binary in binaries:
+        logger.info("Copy binary to stage", extra={"binary": binary, "stage": stage})
         shutil.copy(binary, stage)
     for resource in resources:
+        logger.info(
+            "Copy resource to stage", extra={"resource": resource, "stage": stage}
+        )
         shutil.copy(resource, stage)
 
 
@@ -630,6 +676,10 @@ def create_disk_image(stage: Path, release_name: str) -> tuple[Path, Path]:
     """
     dmg_writable = Path("dist").joinpath(f"{release_name}-temp.dmg")
     dmg = Path("dist").joinpath(f"{release_name}.dmg")
+    logger.info(
+        "Creating writable disk image",
+        extra={"writable_disk_image": dmg_writable, "disk_image": dmg},
+    )
 
     # notarytool submit works only with UDIF disk images, signed "flat"
     # installer packages, and zip files.
@@ -688,6 +738,14 @@ def compress_disk_image(dmg_writable: Path, dmg: Path) -> None:
     [`create-dmg`]: https://github.com/create-dmg/create-dmg/blob/412e99352bacef0f05f9abe6cc4348a627b7ac56/create-dmg
     """
     with log_group("Shrink disk image to fit"):
+        logger.info(
+            "Shrink disk image to fit",
+            extra={
+                "writable_disk_image": dmg_writable,
+                "disk_image": dmg,
+                "size": get_image_size(dmg_writable),
+            },
+        )
         # /usr/bin/hdiutil resize -size "$size"m "$temp.dmg"
         run_command_with_merged_output(
             [
@@ -700,6 +758,10 @@ def compress_disk_image(dmg_writable: Path, dmg: Path) -> None:
         )
 
     with log_group("Compress disk image"):
+        logger.info(
+            "Compress disk image",
+            extra={"writable_disk_image": dmg_writable, "disk_image": dmg},
+        )
         # /usr/bin/hdiutil convert "$temp.dmg" \
         #   -format UDZO \
         #   -imagekey zlib-level=9 \
@@ -716,6 +778,9 @@ def compress_disk_image(dmg_writable: Path, dmg: Path) -> None:
                 "-o",
                 str(dmg),
             ]
+        )
+        logger.info(
+            "unlinking writable disk image", extra={"writable_disk_image": dmg_writable}
         )
         dmg_writable.unlink()
 
@@ -736,6 +801,9 @@ def notarize_bundle(*, bundle: Path) -> None:
     #   --keychain "$keychain_path" \
     #   --wait
     with log_group("Notarize disk image"):
+        logger.info(
+            "Notarize disk image", extra={"bundle": bundle, "keychain": keychain_path()}
+        )
         output = run_notarytool(
             [
                 "/usr/bin/xcrun",
@@ -750,12 +818,18 @@ def notarize_bundle(*, bundle: Path) -> None:
             ]
         )
         for line in output.splitlines():
-            print(line.rstrip())
+            print(line.rstrip(), flush=True)
             if line.strip().startswith("id: "):
                 notarization_request = line.strip().removeprefix("id: ")
 
     if not notarization_request:
+        logger.error("Failed to extract notarization request id")
         raise NotaryToolError("Notarization request did not return an id on success")
+
+    logger.info(
+        "Notarization request successful",
+        extra={"notarization_request": notarization_request},
+    )
 
     # xcrun notarytool log \
     #   2efe2717-52ef-43a5-96dc-0797e4ca1041 \
@@ -776,10 +850,10 @@ def notarize_bundle(*, bundle: Path) -> None:
                 str(logs),
             ]
         )
-        print(output)
+        print(output, flush=True)
         with logs.open("r") as log:
             log_json = json.load(log)
-            print(json.dumps(log_json, indent=4))
+            print(json.dumps(log_json, indent=4), flush=True)
 
 
 def staple_bundle(*, bundle: Path) -> None:
@@ -788,6 +862,7 @@ def staple_bundle(*, bundle: Path) -> None:
     """
 
     with log_group("Staple disk image"):
+        logger.info("Staple disk image", extra={"bundle": bundle})
         run_command_with_merged_output(
             ["/usr/bin/xcrun", "stapler", "staple", "-v", str(bundle)]
         )
@@ -906,9 +981,10 @@ def parse_args() -> Args:
 
 
 def main() -> int:
-    try:
-        emit_metadata()
+    setup_logger()
+    emit_metadata()
 
+    try:
         args = parse_args()
 
         keychain_password = secrets.token_urlsafe()
@@ -932,9 +1008,10 @@ def main() -> int:
     except subprocess.CalledProcessError as e:
         report_subprocess_error(e, output=sys.stderr)
         return e.returncode
-    except Exception as e:  # noqa: BLE001
-        print(f"Error: {e}", file=sys.stderr)
-        print(traceback.format_exc(), file=sys.stderr)
+    except Exception as e:
+        logger.exception("fatal error executing codesigning")
+        print(f"Error: {e}", file=sys.stderr, flush=True)
+        print(traceback.format_exc(), file=sys.stderr, flush=True)
         return 1
     else:
         return 0

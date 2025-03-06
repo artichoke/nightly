@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import shutil
 import subprocess
 import sys
@@ -9,11 +10,14 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
-from .error_reporting import report_subprocess_error
-from .github_actions import emit_metadata, log_group, set_output
-from .shell_utils import run_command_with_merged_output
+from ._utils.error_reporting import report_subprocess_error
+from ._utils.github_actions import emit_metadata, log_group, set_output
+from ._utils.logger import setup_logger
+from ._utils.shell import run_command_with_merged_output
 
-GPG_SIGN_VERSION = "0.3.0"
+GPG_SIGN_VERSION = "0.4.0"
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -37,11 +41,14 @@ def gpg_sign_artifact(*, artifact: Path, release_name: str) -> Path:
 
     stage = Path("dist").joinpath(release_name)
     with log_group(f"Create GPG signature [{artifact.name}]"):
+        logger.info("Prepare stage directory", extra={"stage": stage})
         with suppress(FileNotFoundError):
             shutil.rmtree(stage)
+            logger.info("Removed existing stage directory", extra={"stage": stage})
         stage.mkdir(parents=True)
 
         asc = stage.joinpath(f"{artifact.name}.asc")
+        logger.info("GPG signing artifact", extra={"artifact": artifact, "asc": asc})
         run_command_with_merged_output(
             [
                 "gpg",
@@ -114,9 +121,10 @@ def parse_args() -> Args:
 
 
 def main() -> int:
-    try:
-        emit_metadata()
+    setup_logger()
+    emit_metadata()
 
+    try:
         args = parse_args()
 
         signature = gpg_sign_artifact(artifact=args.artifact, release_name=args.release)
@@ -126,9 +134,10 @@ def main() -> int:
     except subprocess.CalledProcessError as e:
         report_subprocess_error(e, output=sys.stderr)
         return e.returncode
-    except Exception as e:  # noqa: BLE001
-        print(f"Error: {e}", file=sys.stderr)
-        print(traceback.format_exc(), file=sys.stderr)
+    except Exception as e:
+        logger.exception("fatal error executing codesigning")
+        print(f"Error: {e}", file=sys.stderr, flush=True)
+        print(traceback.format_exc(), file=sys.stderr, flush=True)
         return 1
     else:
         return 0
