@@ -23,16 +23,16 @@ def report_subprocess_error(
     in command-line applications.
     """
 
-    print("Error: failed to invoke command", file=output)
-    print(f"    Command: {e.cmd}", file=output)
-    print(f"    Return Code: {e.returncode}", file=output)
+    print("Error: failed to invoke command", file=output, flush=True)
+    print(f"    Command: {e.cmd}", file=output, flush=True)
+    print(f"    Return Code: {e.returncode}", file=output, flush=True)
 
     if e.stdout and e.stdout.rstrip():
-        print("", "Output:", sep="\n", file=output)
-        print(textwrap.indent(e.stdout.rstrip(), "    "), file=output)
+        print("", "Output:", sep="\n", file=output, flush=True)
+        print(textwrap.indent(e.stdout.rstrip(), "    "), file=output, flush=True)
 
     if e.stderr and e.stderr.rstrip():
-        print("", "Error Output:", sep="\n", file=output)
-        print(textwrap.indent(e.stderr.rstrip(), "    "), file=output)
+        print("", "Error Output:", sep="\n", file=output, flush=True)
+        print(textwrap.indent(e.stderr.rstrip(), "    "), file=output, flush=True)
 
-    print("", traceback.format_exc(), sep="\n", file=output)
+    print("", traceback.format_exc(), sep="\n", file=output, flush=True)

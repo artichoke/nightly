@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import sys
 import tomllib
 from dataclasses import dataclass, field
@@ -8,7 +9,10 @@ from enum import StrEnum
 from pathlib import Path
 from typing import assert_never
 
-from .github_actions import emit_metadata, log_group, set_output
+from ._utils.github_actions import emit_metadata, log_group, set_output
+from ._utils.logger import setup_logger
+
+logger = logging.getLogger(__name__)
 
 
 class OutputFormat(StrEnum):
@@ -101,7 +105,7 @@ def format_output(toolchain_version: str, output_format: OutputFormat) -> None:
     """
     match output_format:
         case OutputFormat.PLAIN:
-            print(toolchain_version)
+            logger.info("Rust toolchain version: %s", toolchain_version)
         case OutputFormat.GITHUB:
             set_output(name="version", value=toolchain_version)
         case _:
@@ -110,15 +114,16 @@ def format_output(toolchain_version: str, output_format: OutputFormat) -> None:
 
 def main() -> int:
     """Main function to set Rust toolchain version."""
-    args = parse_args()
+    setup_logger()
     emit_metadata()
+    args = parse_args()
 
     with log_group("Setting Rust toolchain version"):
         try:
             toolchain_version = read_toolchain_version(args.file)
             format_output(toolchain_version, args.format)
         except (FileNotFoundError, OSError, ValueError, TypeError) as e:
-            print(e, file=sys.stderr)
+            print(e, file=sys.stderr, flush=True)
             return 1
 
     return 0

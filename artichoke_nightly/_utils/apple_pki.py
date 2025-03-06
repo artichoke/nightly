@@ -1,13 +1,16 @@
 import io
+import logging
 import shutil
 import tempfile
+import typing
 from pathlib import Path
+from urllib.error import URLError
 from urllib.request import urlopen
 
 import stamina
 
-from .shell_utils import run_command_with_merged_output
-from .validator_utils import is_secure_public_url
+from .shell import run_command_with_merged_output
+from .validator import is_secure_public_url
 
 # Default URL for Apple's Worldwide Developer Relations G2 CA certificate.
 #
@@ -19,6 +22,8 @@ from .validator_utils import is_secure_public_url
 DEFAULT_APPLE_G2_CA_URL = (
     "https://www.apple.com/certificateauthority/AppleRootCA-G2.cer"
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _add_trusted_cert(*, cert_path: Path, keychain: Path) -> None:
@@ -48,19 +53,19 @@ def _add_trusted_cert(*, cert_path: Path, keychain: Path) -> None:
     run_command_with_merged_output(command)
 
 
-@stamina.retry(attempts=3, on=Exception)
-def _fetch_apple_g2_ca_certificate(certificate_url: str) -> io.BytesIO:
+@stamina.retry(on=(TimeoutError, URLError), attempts=3)
+def _fetch_apple_g2_ca_certificate(certificate_url: str) -> typing.BinaryIO:
     """
     Fetch the Apple G2 CA certificate from the given URL and return it as a
     BytesIO object.
     """
 
     if not is_secure_public_url(certificate_url):
-        print("Invalid Apple G2 CA certificate URL, skipping")
+        logger.error("Invalid Apple G2 CA certificate URL: %s", certificate_url)
         raise ValueError(f"Invalid Apple G2 CA certificate URL: {certificate_url}")
 
     cert_data = io.BytesIO()
-    with urlopen(certificate_url) as response:  # noqa: S310
+    with urlopen(certificate_url, timeout=10) as response:  # noqa: S310
         shutil.copyfileobj(response, cert_data)
 
     cert_data.seek(0)
@@ -93,7 +98,7 @@ def install_apple_g2_ca_certificate(
     if keychain is None:
         keychain = Path("/Library/Keychains/System.keychain")
 
-    print(f"Downloading Apple G2 CA certificate from {certificate_url}")
+    logger.info("Downloading Apple G2 CA certificate from %s", certificate_url)
     cert_data = _fetch_apple_g2_ca_certificate(certificate_url)
 
     # Save the downloaded certificate data to a temporary file.
@@ -101,8 +106,10 @@ def install_apple_g2_ca_certificate(
         cert_file_path = Path(temp_cert.name)
         shutil.copyfileobj(cert_data, temp_cert)
         temp_cert.flush()
-        print(f"Certificate downloaded and saved to temporary file: {cert_file_path}")
+        logger.info(
+            "Certificate downloaded and saved to temporary file: %s", cert_file_path
+        )
 
-        print(f"Installing certificate into keychain: {keychain}")
+        logger.info("Installing certificate into keychain: %s", keychain)
         _add_trusted_cert(cert_path=cert_file_path, keychain=keychain)
-        print("Apple G2 CA certificate installed successfully.")
+        logger.info("Apple G2 CA certificate installed successfully.")
