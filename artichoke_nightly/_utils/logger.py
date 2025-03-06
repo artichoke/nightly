@@ -2,6 +2,48 @@ import logging
 import sys
 
 
+class CustomFormatter(logging.Formatter):
+    """
+    Custom formatter that appends extra keys from the log record formatted as
+    `key=value another.key=a_thing` to the log message.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        # First, format the message normally.
+        formatted_message = super().format(record)
+        # Define standard LogRecord attributes to exclude from extras.
+        standard_attrs = {
+            "name",
+            "msg",
+            "args",
+            "levelname",
+            "levelno",
+            "pathname",
+            "filename",
+            "module",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+            "message",
+        }
+        # Collect extra attributes that were passed in.
+        extras = {k: v for k, v in record.__dict__.items() if k not in standard_attrs}
+        if extras:
+            # Format extras as key=value pairs separated by a space.
+            extras_str = " ".join(f"{k}={v}" for k, v in extras.items())
+            formatted_message = f"{formatted_message} | {extras_str}"
+        return formatted_message
+
+
 def setup_logger() -> None:
     """
     Set up the root logger to log to stdout with a specified format.
@@ -11,21 +53,14 @@ def setup_logger() -> None:
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)  # Set your desired logging level here
 
-    # Remove any existing handlers to avoid duplicate logs
+    # Clear existing handlers to avoid duplicate logs.
     if logger.hasHandlers():
         logger.handlers.clear()
 
-    # Create a stream handler that logs to stdout
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.INFO)
-
-    # Define a log message format
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = CustomFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     stream_handler.setFormatter(formatter)
-
-    # Add the handler to the logger
     logger.addHandler(stream_handler)
 
 
