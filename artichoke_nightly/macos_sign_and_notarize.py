@@ -595,12 +595,18 @@ def create_notarization_bundle(
     Returns:
         Path: The path to the newly created and signed DMG archive.
     """
-    stage = prepare_stage_directory(release_name)
-    copy_binaries_and_resources(stage, binaries, resources)
-    dmg_writable, dmg = create_disk_image(stage, release_name)
+    with log_group(f"Prepare stage directory [{release_name}]"):
+        stage = prepare_stage_directory(release_name)
+    with log_group("Copy binaries and resources to stage"):
+        copy_binaries_and_resources(stage, binaries, resources)
+    with log_group("Create disk image"):
+        dmg_writable, dmg = create_disk_image(stage, release_name)
 
-    if dmg_icon_url:
-        add_icon_to_disk_image(dmg_writable, dmg_icon_url)
+    with log_group("Add icon to disk image"):
+        if dmg_icon_url:
+            add_icon_to_disk_image(dmg_writable, dmg_icon_url)
+        else:
+            logger.warning("Skipping setting disk image icon because none was provided")
 
     compress_disk_image(dmg_writable, dmg)
     codesign_binary(binary_path=dmg)
