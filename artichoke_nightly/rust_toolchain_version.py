@@ -107,6 +107,7 @@ def format_output(toolchain_version: str, output_format: OutputFormat) -> None:
         case OutputFormat.PLAIN:
             logger.info("Rust toolchain version: %s", toolchain_version)
         case OutputFormat.GITHUB:
+            logger.info("Setting output 'version' to '%s'", toolchain_version)
             set_output(name="version", value=toolchain_version)
         case _:
             assert_never(output_format)
