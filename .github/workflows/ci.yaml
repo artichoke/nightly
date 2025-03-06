@@ -135,6 +135,50 @@ jobs:
         env:
           CODESIGNED_ASSET: ${{ steps.apple_codesigning.outputs.asset }}
 
+  rust-toolchain-test:
+    name: Test Rust Toolchain Version Script
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Setup virtualenv
+        run: uv sync
+
+      - name: Create test rust-toolchain.toml file
+        run: |
+          cat > rust-toolchain.toml <<EOF
+          [toolchain]
+          channel = "1.69.0"
+          EOF
+
+      - name: Run rust-toolchain-version script (plain output)
+        run: uv run python -m artichoke_nightly.rust_toolchain_version --file rust-toolchain.toml --format plain
+
+      - name: Run rust-toolchain-version script with GitHub output
+        id: rust_toolchain
+        run: uv run python -m artichoke_nightly.rust_toolchain_version --file rust-toolchain.toml --format github
+
+      - name: Verify output is set correctly
+        run: |
+          echo "Version output is: '$GOT_VERSION'"
+          if [ "$GOT_VERSION" != "1.69.0" ]; then
+            echo "Expected version '1.69.0', got '$GOT_VERSION'" >&2
+            exit 1
+          fi
+        env:
+          GOT_VERSION: ${{ steps.rust_toolchain.outputs.version }}
+
   python:
     name: Lint and format Python
     runs-on: ubuntu-latest
