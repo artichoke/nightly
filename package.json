@@ -19,7 +19,7 @@
   ],
   "repository": "github:artichoke/nightly",
   "devDependencies": {
-    "prettier": "3.5.3"
+    "prettier": "3.6.2"
   },
   "scripts": {
     "fmt": "prettier --write \"**/*\""
