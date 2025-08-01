@@ -66,4 +66,5 @@ def setup_logger() -> None:
 # Example usage in main:
 if __name__ == "__main__":
     setup_logger()
-    logging.info("Logger is set up and logging to stdout.")
+    logger = logging.getLogger(__name__)
+    logger.info("Logger is set up and logging to stdout.")
