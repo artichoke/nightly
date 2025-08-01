@@ -66,7 +66,7 @@ jobs:
 
       - name: Create GitHub release
         id: release
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_version.outputs.tag }}
@@ -169,7 +169,7 @@ jobs:
           echo "commit=${release_commit}" >> $GITHUB_OUTPUT
 
       - name: Generate THIRDPARTY license listing
-        uses: artichoke/generate_third_party@4da01edc4b60228846ab2949292044fc55bfb193 # v1.15.0
+        uses: artichoke/generate_third_party@5e60601807f55fd22efcdbdfbdbc2f65d63436b1 # v1.16.0
         with:
           artichoke_ref: ${{ steps.release_info.outputs.commit }}
           target_triple: ${{ matrix.target }}
@@ -190,7 +190,7 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6.1.0
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
         with:
           version: "latest"
           enable-cache: false
@@ -292,7 +292,7 @@ jobs:
           ARTIFACT: ${{ steps.apple_codesigning.outputs.asset }}
 
       - name: Upload release archive
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         if: runner.os == 'macOS'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -306,7 +306,7 @@ jobs:
           artifactContentType: ${{ steps.apple_codesigning.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         if: runner.os == 'macOS'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -349,7 +349,7 @@ jobs:
           ARTIFACT: ${{ steps.build.outputs.asset }}
 
       - name: Upload release archive
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -362,7 +362,7 @@ jobs:
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -425,7 +425,7 @@ jobs:
           persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6.1.0
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
         with:
           version: "latest"
           enable-cache: false
@@ -494,7 +494,7 @@ jobs:
           ARTIFACT: ${{ steps.build.outputs.asset }}
 
       - name: Upload release archive
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -507,7 +507,7 @@ jobs:
           artifactContentType: ${{ steps.build.outputs.content_type }}
 
       - name: Upload release signature
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.release_info.outputs.version }}
@@ -538,7 +538,7 @@ jobs:
         run: echo "release_tag=$(cat artifacts/release-version)" >> $GITHUB_OUTPUT
 
       - name: Publish release
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
+        uses: ncipollo/release-action@bcfe5470707e8832e12347755757cec0eb3c22af # v1.18.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.publish_info.outputs.release_tag }}
